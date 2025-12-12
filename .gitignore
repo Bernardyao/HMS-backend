@@ -1,0 +1,7 @@
+# Ignore dev docs directory
+docs/*
+
+# Allow specific files
+!docs/todo-frontend.md
+!docs/todo-backend.md
+
