@@ -30,7 +30,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // 5. Knife4j (Swagger 增强版，提供 API 文档)
+    // 5. Jakarta Bean Validation (数据验证)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 6. Knife4j (Swagger 增强版，提供 API 文档)
     implementation 'com.github.xiaoymin:knife4j-openapi3-jakarta-spring-boot-starter:4.4.0'
 
     // 测试依赖

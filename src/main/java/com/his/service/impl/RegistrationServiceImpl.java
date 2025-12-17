@@ -88,6 +88,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     /**
      * 取消挂号
+     * 注意：取消后如需退费，需调用退费接口将状态更新为 REFUNDED
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -104,6 +105,24 @@ public class RegistrationServiceImpl implements RegistrationService {
         registrationRepository.save(registration);
 
         log.info("挂号已取消，挂号ID: {}, 取消原因: {}", id, reason);
+    }
+
+    /**
+     * 退费（将已取消的挂号标记为已退费）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void refund(Long id) {
+        Registration registration = registrationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("挂号记录不存在，ID: " + id));
+
+        if (!RegStatusEnum.CANCELLED.getCode().equals(registration.getStatus())) {
+            throw new IllegalStateException("只有已取消状态的挂号才能退费");
+        }
+
+        registration.setStatus(RegStatusEnum.REFUNDED.getCode());
+        registrationRepository.save(registration);
+
+        log.info("挂号已退费，挂号ID: {}", id);
     }
 
     // ============================================

@@ -31,4 +31,11 @@ public interface RegistrationService {
      * @param reason 取消原因
      */
     void cancel(Long id, String reason);
+
+    /**
+     * 退费（将已取消的挂号标记为已退费）
+     *
+     * @param id 挂号记录 ID
+     */
+    void refund(Long id);
 }

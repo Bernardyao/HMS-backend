@@ -95,4 +95,28 @@ public class RegistrationController {
             return Result.error("取消失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 退费
+     *
+     * @param id 挂号记录 ID
+     * @return 操作结果
+     */
+    @Operation(summary = "挂号退费", description = "将已取消的挂号记录标记为已退费状态")
+    @PutMapping("/{id}/refund")
+    public Result<Void> refund(
+            @Parameter(description = "挂号记录ID", required = true, example = "1")
+            @PathVariable Long id) {
+        try {
+            log.info("挂号退费，ID: {}", id);
+            registrationService.refund(id);
+            return Result.success("退费成功", null);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("退费失败: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("退费失败", e);
+            return Result.error("退费失败: " + e.getMessage());
+        }
+    }
 }

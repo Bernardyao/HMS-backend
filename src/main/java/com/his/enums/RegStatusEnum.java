@@ -18,7 +18,12 @@ public enum RegStatusEnum {
     /**
      * 已取消
      */
-    CANCELLED((short) 2, "已取消");
+    CANCELLED((short) 2, "已取消"),
+    
+    /**
+     * 已退费
+     */
+    REFUNDED((short) 3, "已退费");
 
     private final Short code;
     private final String description;

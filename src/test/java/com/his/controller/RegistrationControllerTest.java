@@ -7,7 +7,6 @@ import com.his.entity.Doctor;
 import com.his.repository.DepartmentRepository;
 import com.his.repository.DoctorRepository;
 import com.his.repository.PatientRepository;
-import com.his.repository.RegistrationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,9 +49,6 @@ class RegistrationControllerTest {
 
     @Autowired
     private PatientRepository patientRepository;
-
-    @Autowired
-    private RegistrationRepository registrationRepository;
 
     private Long testDeptId;
     private Long testDoctorId;
