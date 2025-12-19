@@ -48,6 +48,13 @@ management:
     web:
       exposure:
         include: health,info,metrics
+
+# JWT 配置
+jwt:
+  # JWT 密钥（生产环境应使用更复杂的密钥，建议通过环境变量配置）
+  secret: HIS_SYSTEM_JWT_SECRET_KEY_2025_VERY_LONG_SECRET_KEY_FOR_SECURITY_MUST_BE_AT_LEAST_256_BITS
+  # Token 有效期：24小时（单位：毫秒）
+  expiration: 86400000
   endpoint:
     health:
       show-details: when-authorized

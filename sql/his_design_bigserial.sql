@@ -38,6 +38,7 @@ DROP TABLE IF EXISTS his_medicine CASCADE;
 DROP TABLE IF EXISTS his_patient CASCADE;
 DROP TABLE IF EXISTS his_doctor CASCADE;
 DROP TABLE IF EXISTS his_department CASCADE;
+DROP TABLE IF EXISTS his_sysuser CASCADE;
 
 -- ============================================
 -- 公共函数: 自动更新 updated_at
@@ -51,6 +52,59 @@ END;
 $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION p_set_updated_at() IS '自动更新 updated_at 时间戳的触发器函数';
+
+-- ============================================
+-- 0. 系统用户表 (his_sysuser)
+-- ============================================
+CREATE TABLE his_sysuser (
+    -- 主键使用IDENTITY (PostgreSQL 10+ 推荐方式)
+    main_id             BIGINT          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    username            VARCHAR(50)     NOT NULL UNIQUE,
+    password            VARCHAR(255)    NOT NULL,
+    name                VARCHAR(50)     NOT NULL,
+    phone               VARCHAR(20)     DEFAULT NULL,
+    email               VARCHAR(100)    DEFAULT NULL,
+    status              SMALLINT        NOT NULL DEFAULT 1,
+    is_deleted          SMALLINT        NOT NULL DEFAULT 0,
+    created_at          TIMESTAMP       DEFAULT now(),
+    updated_at          TIMESTAMP       DEFAULT now(),
+    last_login_time     TIMESTAMP       DEFAULT NULL,
+    
+    -- 角色和权限相关
+    role_code           VARCHAR(50)     NOT NULL DEFAULT 'DOCTOR',
+    department_main_id  BIGINT          DEFAULT NULL,
+    
+    -- 可空/变长字段在后
+    avatar              VARCHAR(500)    DEFAULT NULL,
+    remark              VARCHAR(500)    DEFAULT NULL,
+    created_by          BIGINT          DEFAULT NULL,
+    updated_by          BIGINT          DEFAULT NULL
+);
+
+COMMENT ON TABLE his_sysuser IS '系统用户表';
+COMMENT ON COLUMN his_sysuser.main_id IS '主键ID（自增）';
+COMMENT ON COLUMN his_sysuser.username IS '用户名（登录账号）';
+COMMENT ON COLUMN his_sysuser.password IS '密码（加密存储）';
+COMMENT ON COLUMN his_sysuser.name IS '真实姓名';
+COMMENT ON COLUMN his_sysuser.phone IS '手机号码';
+COMMENT ON COLUMN his_sysuser.email IS '电子邮箱';
+COMMENT ON COLUMN his_sysuser.status IS '状态（0=停用, 1=启用）';
+COMMENT ON COLUMN his_sysuser.is_deleted IS '软删除标记（0=未删除, 1=已删除）';
+COMMENT ON COLUMN his_sysuser.created_at IS '创建时间';
+COMMENT ON COLUMN his_sysuser.updated_at IS '更新时间';
+COMMENT ON COLUMN his_sysuser.last_login_time IS '最后登录时间';
+COMMENT ON COLUMN his_sysuser.role_code IS '角色代码（ADMIN=管理员, DOCTOR=医生, NURSE=护士, PHARMACIST=药师, CASHIER=收费员）';
+COMMENT ON COLUMN his_sysuser.department_main_id IS '所属科室ID（医生/护士必填）';
+COMMENT ON COLUMN his_sysuser.avatar IS '头像URL';
+COMMENT ON COLUMN his_sysuser.remark IS '备注信息';
+COMMENT ON COLUMN his_sysuser.created_by IS '创建人ID';
+COMMENT ON COLUMN his_sysuser.updated_by IS '更新人ID';
+
+-- 创建索引
+CREATE UNIQUE INDEX idx_his_sysuser_username ON his_sysuser (username) WHERE is_deleted = 0;
+CREATE INDEX idx_his_sysuser_department ON his_sysuser (department_main_id) WHERE is_deleted = 0;
+CREATE INDEX idx_his_sysuser_role ON his_sysuser (role_code) WHERE is_deleted = 0;
+CREATE INDEX idx_his_sysuser_status ON his_sysuser (status) WHERE is_deleted = 0;
 
 -- ============================================
 -- 1. 科室表 (his_department)
@@ -559,6 +613,13 @@ CREATE INDEX idx_his_charge_charge_time ON his_charge(charge_time);
 -- ============================================
 -- 12. 外键约束 (FOREIGN KEY)
 -- ============================================
+-- 系统用户表
+ALTER TABLE his_sysuser
+    ADD CONSTRAINT fk_sysuser_department
+    FOREIGN KEY (department_main_id)
+    REFERENCES his_department(main_id)
+    ON DELETE SET NULL;
+
 -- 科室表 (自引用)
 ALTER TABLE his_department 
     ADD CONSTRAINT fk_his_department_parent 
@@ -649,6 +710,11 @@ ALTER TABLE his_charge
 -- ============================================
 -- 13. 触发器 (Triggers)
 -- ============================================
+CREATE TRIGGER t_his_sysuser_updated_at
+    BEFORE UPDATE ON his_sysuser
+    FOR EACH ROW
+    EXECUTE FUNCTION p_set_updated_at();
+
 CREATE TRIGGER t_his_department_updated_at
     BEFORE UPDATE ON his_department
     FOR EACH ROW
@@ -693,6 +759,19 @@ CREATE TRIGGER t_his_charge_updated_at
     BEFORE UPDATE ON his_charge
     FOR EACH ROW
     EXECUTE FUNCTION p_set_updated_at();
+
+-- ============================================
+-- 14. 初始化数据
+-- ============================================
+
+-- 插入默认管理员账户
+-- 密码: admin123 (实际使用时应使用加密后的密码，如 BCrypt)
+INSERT INTO his_sysuser (username, password, name, phone, email, role_code, status, is_deleted, remark)
+VALUES 
+    ('admin', '$2a$10$EH/qE.0QE0QE0QE0QE0QEuGKF9kK0QE0QE0QE0QE0QE0QE0QE0QE', '系统管理员', '13800138000', 'admin@his.com', 'ADMIN', 1, 0, '系统默认管理员账户'),
+    ('doctor001', '$2a$10$EH/qE.0QE0QE0QE0QE0QEuGKF9kK0QE0QE0QE0QE0QE0QE0QE0QE', '张医生', '13800138001', 'doctor001@his.com', 'DOCTOR', 1, 0, '测试医生账户');
+
+COMMENT ON TABLE his_sysuser IS '系统用户表 - 默认密码为 admin123，建议首次登录后修改';
 
 -- ============================================
 -- 恢复外键检查

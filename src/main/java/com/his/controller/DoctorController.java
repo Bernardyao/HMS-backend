@@ -1,7 +1,10 @@
 package com.his.controller;
 
 import com.his.common.Result;
+import com.his.config.JwtAuthenticationToken;
+import com.his.entity.Doctor;
 import com.his.enums.RegStatusEnum;
+import com.his.repository.DoctorRepository;
 import com.his.service.DoctorService;
 import com.his.vo.RegistrationVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +12,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,44 +26,45 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/doctor")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
 public class DoctorController {
 
     private final DoctorService doctorService;
+    private final DoctorRepository doctorRepository;
 
     /**
      * 查询今日候诊列表（支持个人/科室混合视图）
      * 
      * 安全说明：
-     * - 生产环境中，doctorId 和 deptId 应直接从 Token/SecurityContext 获取，不允许前端传递
-     * - 当前为临时实现，后续需集成 Spring Security 后移除这两个参数
+     * - doctorId 和 deptId 从 JWT Token 中获取，已集成 Spring Security
+     * - 只有角色为 DOCTOR 的用户才能访问此接口
      * 
      * 业务逻辑：
      * - showAll=false（默认）：个人视图，仅查询分配给当前医生的待诊患者
      * - showAll=true：科室视图，查询当前科室下所有待诊患者（用于科室主任查看或医生协作）
      *
-     * @param doctorId 医生ID（临时参数，生产环境应从Token获取）
-     * @param deptId 科室ID（临时参数，生产环境应从Token获取）
      * @param showAll 是否显示科室所有患者（默认false=个人视图，true=科室视图）
      * @return 候诊列表
      */
     @Operation(summary = "查询今日候诊列表（支持个人/科室视图切换）", 
                description = "默认显示分配给当前医生的候诊患者（个人视图），设置showAll=true可查看整个科室的候诊患者（科室视图）。" +
-                           "按排队号升序排列。注意：doctorId和deptId参数仅用于开发测试，生产环境应从身份认证Token中获取。")
+                           "按排队号升序排列。医生信息从JWT Token中自动获取。")
     @GetMapping("/waiting-list")
     public Result<List<RegistrationVO>> getWaitingList(
-            @Parameter(description = "医生ID（临时参数，生产环境应从Token获取）", required = true, example = "1")
-            @RequestParam Long doctorId,
-            @Parameter(description = "科室ID（临时参数，生产环境应从Token获取）", required = true, example = "1")
-            @RequestParam Long deptId,
             @Parameter(description = "是否显示科室所有患者（false=个人视图，true=科室视图）", required = false, example = "false")
             @RequestParam(defaultValue = "false") boolean showAll) {
         try {
-            log.info("查询候诊列表请求，医生ID: {}, 科室ID: {}, 科室视图: {}", doctorId, deptId, showAll);
+            // 从 SecurityContext 获取当前登录医生信息
+            JwtAuthenticationToken authentication = 
+                (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
             
-            // TODO: 生产环境中，应从 SecurityContext 或 JWT Token 中获取 doctorId 和 deptId
-            // CurrentUser currentUser = UserContextHolder.getCurrentUser();
-            // Long doctorId = currentUser.getId();
-            // Long deptId = currentUser.getDeptId();
+            Long doctorId = authentication.getRelatedId();  // 对于医生，relatedId 就是 doctorId
+            // 从数据库获取医生信息以获得科室ID
+            Doctor doctor = doctorRepository.findById(doctorId)
+                    .orElseThrow(() -> new IllegalArgumentException("医生信息不存在"));
+            Long deptId = doctor.getDepartment().getMainId();
+            
+            log.info("查询候诊列表请求，医生ID: {}, 科室ID: {}, 科室视图: {}", doctorId, deptId, showAll);
             
             List<RegistrationVO> waitingList = doctorService.getWaitingList(doctorId, deptId, showAll);
             
