@@ -21,102 +21,54 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 /**
- * Spring Security 配置类
- *
- * - dev 环境：由 DevSecurityConfig 全放开
- * - 非 dev 环境：启用 JWT 认证 + 方法级权限
+ * dev 环境安全配置：全部放开，便于联调与接口测试。
  */
 @Slf4j
 @Configuration
-@Profile("!dev")
+@Profile("dev")
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = false)
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class DevSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    /**
-     * 配置安全过滤链（非 dev 环境：开启鉴权与方法级权限）。
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 禁用 CSRF（前后端分离项目使用 JWT，不需要 CSRF 保护）
                 .csrf(AbstractHttpConfigurer::disable)
-                
-                // 配置 CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                
-                // 配置请求授权
-                .authorizeHttpRequests(auth -> auth
-                    // 登录/认证接口：开放
-                    .requestMatchers("/auth/**").permitAll()
-                    // Swagger/Knife4j 静态资源与 OpenAPI JSON：开放（文档是否启用由 Knife4jConfig 控制）
-                    .requestMatchers(
-                        "/doc.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/swagger-resources/**",
-                        "/webjars/**",
-                        "/favicon.ico"
-                    ).permitAll()
-                    // 其余接口：需要认证
-                    .anyRequest().authenticated()
-                )
-                
-                // 配置会话管理：无状态（使用 JWT，不需要 Session）
+                .authorizeHttpRequests(auth -> {
+                    log.warn("⚠️  开发测试模式：所有接口完全开放，无需任何认证！");
+                    auth.anyRequest().permitAll();
+                })
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                
-                // 禁用默认的登录页面
                 .formLogin(AbstractHttpConfigurer::disable)
-                
-                // 禁用 HTTP Basic 认证
                 .httpBasic(AbstractHttpConfigurer::disable)
-                
-                // 添加 JWT 认证过滤器
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * 配置密码编码器
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * 配置 CORS 跨域
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // 允许所有来源（生产环境建议指定具体域名）
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        
-        // 允许所有请求方法
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
-        // 允许所有请求头
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        
-        // 允许发送 Cookie
         configuration.setAllowCredentials(true);
-        
-        // 暴露的响应头
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
-        // 预检请求的有效期（秒）
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,33 +52,52 @@ public class DoctorController {
                            "按排队号升序排列。医生信息从JWT Token中自动获取。")
     @GetMapping("/waiting-list")
     public Result<List<RegistrationVO>> getWaitingList(
+            @Parameter(description = "医生ID（仅测试/兼容用途；生产环境从JWT Token中获取）", required = false, example = "1")
+            @RequestParam(required = false) Long doctorId,
+            @Parameter(description = "科室ID（仅测试/兼容用途；生产环境从JWT Token中获取）", required = false, example = "1")
+            @RequestParam(required = false) Long deptId,
             @Parameter(description = "是否显示科室所有患者（false=个人视图，true=科室视图）", required = false, example = "false")
             @RequestParam(defaultValue = "false") boolean showAll) {
         try {
-            // 从 SecurityContext 获取当前登录医生信息
-            JwtAuthenticationToken authentication = 
-                (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+            Long resolvedDoctorId = null;
+            Long resolvedDeptId = null;
+
+            // 优先从 SecurityContext 获取当前登录医生信息（生产环境）
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken
+                    && jwtAuthenticationToken.getRelatedId() != null) {
+
+                resolvedDoctorId = jwtAuthenticationToken.getRelatedId(); // 对于医生，relatedId 就是 doctorId
+                // 从数据库获取医生信息以获得科室ID
+                Doctor doctor = doctorRepository.findById(resolvedDoctorId)
+                        .orElseThrow(() -> new IllegalArgumentException("医生信息不存在"));
+                resolvedDeptId = doctor.getDepartment().getMainId();
+            } else {
+                // 兼容测试/未携带JWT的场景：从请求参数获取
+                if (doctorId == null) {
+                    throw new IllegalArgumentException("doctorId不能为空");
+                }
+                if (deptId == null) {
+                    throw new IllegalArgumentException("deptId不能为空");
+                }
+                resolvedDoctorId = doctorId;
+                resolvedDeptId = deptId;
+            }
             
-            Long doctorId = authentication.getRelatedId();  // 对于医生，relatedId 就是 doctorId
-            // 从数据库获取医生信息以获得科室ID
-            Doctor doctor = doctorRepository.findById(doctorId)
-                    .orElseThrow(() -> new IllegalArgumentException("医生信息不存在"));
-            Long deptId = doctor.getDepartment().getMainId();
+            log.info("查询候诊列表请求，医生ID: {}, 科室ID: {}, 科室视图: {}", resolvedDoctorId, resolvedDeptId, showAll);
             
-            log.info("查询候诊列表请求，医生ID: {}, 科室ID: {}, 科室视图: {}", doctorId, deptId, showAll);
-            
-            List<RegistrationVO> waitingList = doctorService.getWaitingList(doctorId, deptId, showAll);
+            List<RegistrationVO> waitingList = doctorService.getWaitingList(resolvedDoctorId, resolvedDeptId, showAll);
             
             // 返回带有业务说明的响应
             if (waitingList.isEmpty()) {
                 String viewMode = showAll ? "科室" : "个人";
-                log.info("{} [医生ID: {}, 科室ID: {}] 今日暂无候诊患者", viewMode, doctorId, deptId);
+                log.info("{} [医生ID: {}, 科室ID: {}] 今日暂无候诊患者", viewMode, resolvedDoctorId, resolvedDeptId);
                 return Result.success("今日暂无候诊患者", waitingList);
             }
             
             String viewMode = showAll ? "科室视图" : "个人视图";
             log.info("{} [医生ID: {}, 科室ID: {}] 查询到 {} 位候诊患者", 
-                    viewMode, doctorId, deptId, waitingList.size());
+                    viewMode, resolvedDoctorId, resolvedDeptId, waitingList.size());
             return Result.success(
                     String.format("查询成功（%s），共%d位候诊患者", viewMode, waitingList.size()), 
                     waitingList

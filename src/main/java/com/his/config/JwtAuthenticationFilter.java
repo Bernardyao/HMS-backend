@@ -31,30 +31,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response, 
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
+            String authHeader = request.getHeader("Authorization");
+            log.debug("请求路径: {}, Authorization Header: {}", 
+                request.getRequestURI(), 
+                authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "null");
+            
             // 从请求头中获取 Token
             String token = extractToken(request);
 
-            // 如果 Token 存在且有效，设置认证信息
-            if (token != null && jwtUtils.validateToken(token)) {
-                // 从 Token 中提取用户信息
-                Long userId = jwtUtils.getUserIdFromToken(token);
-                String username = jwtUtils.getUsernameFromToken(token);
-                String role = jwtUtils.getRoleFromToken(token);
-                Long relatedId = jwtUtils.getRelatedIdFromToken(token);
+            // 只有当 Token 存在时才进行验证和处理
+            if (token != null) {
+                log.debug("提取的Token(前30字符): {}...", token.substring(0, Math.min(30, token.length())));
+                
+                // 验证 Token 是否有效
+                if (jwtUtils.validateToken(token)) {
+                    // 从 Token 中提取用户信息
+                    Long userId = jwtUtils.getUserIdFromToken(token);
+                    String username = jwtUtils.getUsernameFromToken(token);
+                    String role = jwtUtils.getRoleFromToken(token);
+                    Long relatedId = jwtUtils.getRelatedIdFromToken(token);
 
-                // 创建自定义的认证对象，包含用户信息
-                JwtAuthenticationToken authentication = new JwtAuthenticationToken(
-                        userId, username, role, relatedId
-                );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // 创建自定义的认证对象，包含用户信息
+                    JwtAuthenticationToken authentication = new JwtAuthenticationToken(
+                            userId, username, role, relatedId
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // 设置到 SecurityContext
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // 设置到 SecurityContext
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("设置认证信息成功：用户ID={}, 用户名={}, 角色={}", userId, username, role);
+                    log.debug("设置认证信息成功：用户ID={}, 用户名={}, 角色={}", userId, username, role);
+                } else {
+                    log.debug("Token 验证失败，请求路径: {}", request.getRequestURI());
+                }
             }
+            // 没有 Token 时不做任何处理，让 Spring Security 处理
         } catch (Exception e) {
-            log.error("JWT 认证失败: {}", e.getMessage());
+            log.warn("JWT 认证处理异常: {}, 请求路径: {}", e.getMessage(), request.getRequestURI());
             // 认证失败时清空 SecurityContext
             SecurityContextHolder.clearContext();
         }

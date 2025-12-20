@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("挂号控制器集成测试")
+@WithMockUser(roles = "NURSE")
 class RegistrationControllerTest {
 
     @Autowired
@@ -160,9 +162,9 @@ class RegistrationControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.patientName").value("王五"));
 
-        // 验证只创建了一个患者
-        long patientCount = patientRepository.count();
-        org.assertj.core.api.Assertions.assertThat(patientCount).isEqualTo(1);
+        // 验证相同身份证号只创建了一个患者（不受其他测试/初始化数据影响）
+        long sameIdCardCount = patientRepository.countByIdCardAndIsDeleted("320106199601013456", (short) 0);
+        org.assertj.core.api.Assertions.assertThat(sameIdCardCount).isEqualTo(1);
     }
 
     @Test

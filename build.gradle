@@ -11,6 +11,11 @@ java {
     sourceCompatibility = '17' // 确保你安装了 JDK 17 或以上
 }
 
+// 编译配置：添加 -parameters 标志以保留参数名
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-parameters']
+}
+
 repositories {
 
     mavenCentral() // 从中央仓库下载
@@ -46,6 +51,7 @@ dependencies {
 
     // 测试依赖
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'com.h2database:h2'
 }
 

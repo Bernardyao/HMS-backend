@@ -71,6 +71,10 @@ public class JwtUtils {
      */
     public Claims parseToken(String token) {
         try {
+            log.debug("开始解析Token，Token长度: {}, 前20字符: {}...", 
+                token.length(), 
+                token.substring(0, Math.min(20, token.length())));
+            
             return Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
@@ -78,6 +82,9 @@ public class JwtUtils {
                     .getPayload();
         } catch (Exception e) {
             log.error("解析 Token 失败: {}", e.getMessage());
+            log.error("Token内容(前50字符): {}...", 
+                token.substring(0, Math.min(50, token.length())));
+            log.error("异常类型: {}", e.getClass().getName());
             throw new RuntimeException("Token 无效或已过期");
         }
     }

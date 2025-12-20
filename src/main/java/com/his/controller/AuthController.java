@@ -5,6 +5,7 @@ import com.his.dto.LoginRequest;
 import com.his.service.AuthService;
 import com.his.vo.LoginVO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AuthController {
      */
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "用户通过用户名和密码登录系统，返回 JWT Token")
+    @SecurityRequirements() // 明确标记此接口不需要认证
     public Result<LoginVO> login(@Valid @RequestBody LoginRequest request) {
         try {
             log.info("接收登录请求，用户名: {}", request.getUsername());
@@ -50,6 +52,7 @@ public class AuthController {
      */
     @GetMapping("/validate")
     @Operation(summary = "验证Token", description = "验证 JWT Token 是否有效")
+    @SecurityRequirements() // 此接口不需要认证
     public Result<Boolean> validateToken(@RequestHeader("Authorization") String token) {
         try {
             // 移除 "Bearer " 前缀
@@ -74,6 +77,7 @@ public class AuthController {
      */
     @PostMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出系统（JWT 模式下客户端删除 Token 即可）")
+    @SecurityRequirements() // 此接口不需要认证
     public Result<String> logout() {
         log.info("用户登出");
         return Result.success("登出成功", null);

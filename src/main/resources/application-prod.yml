@@ -61,6 +61,21 @@ spring:
           use_second_level_cache: false
           use_query_cache: false
 
+# ============================================================
+# Swagger/Knife4j 配置 - 生产环境
+# ============================================================
+app:
+  swagger:
+    # 【重要】禁用 Swagger（生产环境必须关闭）
+    enabled: false
+    # 即使误开启，也需要认证
+    require-auth: true
+    # 只允许管理员访问
+    allowed-roles:
+      - ADMIN
+    # 启用生产环境警告
+    warn-on-production: true
+
 # 日志配置 - 生产环境
 logging:
   level:

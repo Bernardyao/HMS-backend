@@ -65,7 +65,7 @@ public class PasswordInitializer implements CommandLineRunner {
      * 检查密码是否需要重置
      * 判断标准：
      * 1. 密码为空
-     * 2. 密码长度不是60（BCrypt标准长度）
+     * 2. 密码长度异常（BCrypt标准长度为60，但某些实现可能是59-60）
      * 3. 密码格式不正确（不以$2a$或$2b$开头）
      * 4. 密码无法验证（测试失败）
      */
@@ -78,9 +78,9 @@ public class PasswordInitializer implements CommandLineRunner {
             return true;
         }
         
-        // 检查2：长度不正确（BCrypt应该是60字符）
-        if (password.length() != 60) {
-            log.warn("用户 {} 密码长度异常: {} (正常应为60)", user.getUsername(), password.length());
+        // 检查2：长度不正确（BCrypt应该是59-60字符）
+        if (password.length() < 59 || password.length() > 60) {
+            log.warn("用户 {} 密码长度异常: {} (正常应为59-60)", user.getUsername(), password.length());
             return true;
         }
         

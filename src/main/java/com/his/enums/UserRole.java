@@ -21,7 +21,17 @@ public enum UserRole {
     /**
      * 护士 - 只能访问自己所在科室的数据
      */
-    NURSE("NURSE", "护士");
+    NURSE("NURSE", "护士"),
+    
+    /**
+     * 药师 - 负责发药、退药、库存管理
+     */
+    PHARMACIST("PHARMACIST", "药师"),
+    
+    /**
+     * 收费员 - 负责收费、退费
+     */
+    CASHIER("CASHIER", "收费员");
     
     private final String code;
     private final String description;

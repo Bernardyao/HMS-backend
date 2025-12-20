@@ -1,5 +1,6 @@
 package com.his.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -176,6 +177,7 @@ public class Medicine {
     @OneToMany(mappedBy = "medicine", fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonIgnore
     private List<PrescriptionDetail> prescriptionDetails;
 
     @PrePersist

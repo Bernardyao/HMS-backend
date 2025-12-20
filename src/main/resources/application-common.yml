@@ -55,11 +55,52 @@ jwt:
   secret: HIS_SYSTEM_JWT_SECRET_KEY_2025_VERY_LONG_SECRET_KEY_FOR_SECURITY_MUST_BE_AT_LEAST_256_BITS
   # Token 有效期：24小时（单位：毫秒）
   expiration: 86400000
-  endpoint:
-    health:
-      show-details: when-authorized
-  metrics:
-    enable:
-      jvm: true
-      process: true
-      system: true
+
+# Springdoc OpenAPI 配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    # 设置操作排序
+    operations-sorter: alpha
+    tags-sorter: alpha
+    # 设置默认模型展开深度
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1
+    # 显示请求持续时间
+    display-request-duration: true
+    # 尝试一下功能
+    try-it-out-enabled: true
+  # 禁用 actuator 文档
+  show-actuator: false
+
+# Knife4j 增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    swagger-model-name: 实体类
+    # 启用调试功能
+    enable-debug: true
+    # 启用请求参数缓存
+    enable-request-cache: true
+    # 启用动态参数
+    enable-dynamic-parameter: true
+    # 启用版本管理
+    enable-version: true
+    # 启用搜索功能
+    enable-search: true
+    # 启用Host配置
+    enable-host: false
+    # 启用请求重载
+    enable-reload-cache-parameter: true
+  # 生产环境配置
+  production: false
+  # 基础认证配置（生产环境建议启用）
+  basic:
+    enable: false
+    username: admin
+    password: admin123

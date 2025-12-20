@@ -27,6 +27,11 @@ public interface PatientRepository extends JpaRepository<Patient, Long>, JpaSpec
     Optional<Patient> findByIdCardAndIsDeleted(String idCard, Short isDeleted);
 
     /**
+     * 统计指定身份证号的患者数量（未删除）
+     */
+    long countByIdCardAndIsDeleted(String idCard, Short isDeleted);
+
+    /**
      * 根据姓名模糊查询（未删除）
      */
     List<Patient> findByNameContainingAndIsDeleted(String name, Short isDeleted);

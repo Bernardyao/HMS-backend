@@ -50,3 +50,18 @@ logging:
     org.springframework.web: INFO
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+
+# ============================================================
+# Swagger/Knife4j 配置 - 测试环境
+# ============================================================
+app:
+  swagger:
+    # 启用 Swagger（测试环境）
+    enabled: true
+    # 需要认证
+    require-auth: true
+    # 只允许管理员和开发者访问
+    allowed-roles:
+      - ADMIN
+      - DEVELOPER
+    warn-on-production: true

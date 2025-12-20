@@ -48,7 +48,28 @@ spring:
     livereload:
       enabled: true
 
+# ============================================================
+# Swagger/Knife4j 配置 - 开发环境
+# ============================================================
+app:
+  swagger:
+    # 启用 Swagger（开发环境）
+    enabled: true
+    # 不需要认证（方便开发调试，可以改为true增强安全性）
+    require-auth: false
+    # 允许访问的角色（如果require-auth=true时生效）
+    allowed-roles:
+      - ADMIN
+      - DEVELOPER
+      - DOCTOR
+      - NURSE
+      - PHARMACIST
+    # 生产环境警告
+    warn-on-production: true
+
+# ============================================================
 # 日志配置 - 开发环境
+# ============================================================
 logging:
   level:
     root: INFO

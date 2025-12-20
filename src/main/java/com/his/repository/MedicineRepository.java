@@ -49,6 +49,13 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long>, JpaSp
     List<Medicine> findAllActive();
 
     /**
+     * 根据关键字搜索药品（名称或编码模糊匹配）
+     */
+    @Query("SELECT m FROM Medicine m WHERE m.isDeleted = :isDeleted AND m.status = 1 " +
+           "AND (LOWER(m.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(m.medicineCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Medicine> searchByKeyword(@Param("keyword") String keyword, @Param("isDeleted") Short isDeleted);
+
+    /**
      * 查询库存低于最低库存的药品
      */
     @Query("SELECT m FROM Medicine m WHERE m.stockQuantity <= m.minStock AND m.isDeleted = 0")
