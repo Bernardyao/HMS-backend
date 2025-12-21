@@ -27,4 +27,22 @@ public interface DoctorService {
      * @param newStatus 新状态
      */
     void updateStatus(Long regId, RegStatusEnum newStatus);
+
+    /**
+     * 【新增】验证并更新挂号状态（带医生身份验证，防止水平越权IDOR）
+     *
+     * <p><b>安全性说明：</b></p>
+     * <ul>
+     *   <li>这是推荐的使用方式，会验证当前医生是否拥有该挂号记录</li>
+     *   <li>医生只能更新自己患者（通过该医生接诊）的挂号状态</li>
+     *   <li>如果医生尝试更新其他医生的患者，会抛出异常</li>
+     * </ul>
+     *
+     * @param regId 挂号记录ID
+     * @param currentDoctorId 当前医生ID（从JWT Token获取）
+     * @param newStatus 新状态
+     * @throws IllegalArgumentException 如果挂号不存在或医生无权限
+     */
+    void validateAndUpdateStatus(Long regId, Long currentDoctorId, RegStatusEnum newStatus);
 }
+

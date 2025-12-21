@@ -19,11 +19,6 @@ import java.util.stream.Collectors;
 /**
  * 药品管理控制器
  * 权限：医生和管理员可以查询药品，药师可以管理库存
- * 
- * 注意事项：
- * 1. 所有接口明确指定 produces = MediaType.APPLICATION_JSON_VALUE
- * 2. 异常统一由 GlobalExceptionHandler 处理
- * 3. 详细日志记录便于排查问题
  */
 @Tag(name = "药品管理", description = "药品相关接口，包括搜索、库存查询等操作")
 @Slf4j
@@ -42,26 +37,18 @@ public class MedicineController {
      * @return 药品列表
      */
     @Operation(summary = "搜索药品", description = "根据药品名称或编码模糊搜索药品信息")
-    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("/search")
     @PreAuthorize("hasAnyRole('DOCTOR', 'PHARMACIST', 'ADMIN')")
     public Result<List<MedicineVO>> search(
             @Parameter(description = "关键字（药品名称或编码）", example = "阿莫西林")
             @RequestParam(required = false) String keyword) {
         
-        log.info("======================================");
-        log.info("收到药品搜索请求");
-        log.info("关键字: {}", keyword);
-        log.info("======================================");
+        log.info("搜索药品，关键字: {}", keyword);
         
         List<Medicine> medicines = medicineService.searchMedicines(keyword);
-        log.info("Service层返回 {} 个药品", medicines.size());
-        
         List<MedicineVO> voList = medicines.stream()
             .map(this::convertToVO)
             .collect(Collectors.toList());
-        
-        log.info("转换为VO完成，返回 {} 个MedicineVO对象", voList.size());
-        log.info("准备返回Result.success响应，Content-Type应为: application/json");
         
         return Result.success("查询成功", voList);
     }
@@ -74,22 +61,16 @@ public class MedicineController {
      * @return 药品信息
      */
     @Operation(summary = "查询药品详情", description = "根据药品ID查询详细信息")
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR', 'PHARMACIST', 'ADMIN')")
     public Result<MedicineVO> getById(
             @Parameter(description = "药品ID", required = true, example = "1")
             @PathVariable("id") Long id) {
         
-        log.info("======================================");
-        log.info("收到查询药品详情请求，ID: {}", id);
-        log.info("======================================");
+        log.info("查询药品详情，ID: {}", id);
         
         Medicine medicine = medicineService.getById(id);
-        log.info("Service层返回药品: {}", medicine.getName());
-        
         MedicineVO vo = convertToVO(medicine);
-        log.info("转换为VO完成: {}", vo.getName());
-        log.info("准备返回Result.success响应，Content-Type应为: application/json");
         
         return Result.success("查询成功", vo);
     }
@@ -108,10 +89,9 @@ public class MedicineController {
             @Parameter(description = "处方ID", required = true, example = "1")
             @RequestParam Long prescriptionId) {
         try {
-            log.info("收到发药请求，处方ID: {}", prescriptionId);
+            log.info("发药请求，处方ID: {}", prescriptionId);
             
-            // TODO: 调用服务层进行发药处理
-            // DispenseVO dispenseVO = medicineService.dispenseMedicine(prescriptionId);
+            // TODO: 实现发药业务逻辑
             
             return Result.success("发药成功", "发药单号: DISP" + System.currentTimeMillis());
         } catch (IllegalArgumentException e) {
@@ -143,10 +123,9 @@ public class MedicineController {
             @Parameter(description = "退药原因", required = true, example = "患者要求退药")
             @RequestParam String reason) {
         try {
-            log.info("收到退药请求，发药记录ID: {}, 退药原因: {}", dispenseId, reason);
+            log.info("退药请求，发药记录ID: {}, 原因: {}", dispenseId, reason);
             
-            // TODO: 调用服务层进行退药处理
-            // ReturnVO returnVO = medicineService.returnMedicine(dispenseId, reason);
+            // TODO: 实现退药业务逻辑
             
             return Result.success("退药成功", "退药单号: RET" + System.currentTimeMillis());
         } catch (IllegalArgumentException e) {
@@ -175,10 +154,9 @@ public class MedicineController {
             @Parameter(description = "是否只查询低库存药品", example = "false")
             @RequestParam(defaultValue = "false") boolean lowStock) {
         try {
-            log.info("查询药品库存，关键字: {}, 只查低库存: {}", keyword, lowStock);
+            log.info("查询药品库存，关键字: {}, 低库存: {}", keyword, lowStock);
             
-            // TODO: 调用服务层查询库存
-            // List<MedicineStockVO> stockList = medicineService.getStock(keyword, lowStock);
+            // TODO: 实现库存查询逻辑
             
             return Result.success("查询成功", "库存列表（待实现）");
         } catch (Exception e) {
@@ -198,8 +176,7 @@ public class MedicineController {
         try {
             log.info("查询待发药列表");
             
-            // TODO: 调用服务层查询待发药列表
-            // List<PrescriptionVO> pendingList = medicineService.getPendingDispenseList();
+            // TODO: 实现待发药列表查询
             
             return Result.success("查询成功", "待发药列表（待实现）");
         } catch (Exception e) {
@@ -219,10 +196,9 @@ public class MedicineController {
         try {
             log.info("查询今日发药统计");
             
-            // TODO: 调用服务层获取统计数据
-            // DispenseStatisticsVO statistics = medicineService.getTodayStatistics();
+            // TODO: 实现发药统计逻辑
             
-            return Result.success("查询成功", "今日发药统计：处方数 0 个，药品数量 0 盒（待实现）");
+            return Result.success("查询成功", "今日发药统计（待实现）");
         } catch (Exception e) {
             log.error("查询发药统计失败", e);
             return Result.error("查询失败: " + e.getMessage());

@@ -15,10 +15,11 @@ server:
 
 spring:
   # 数据源配置 - 测试环境（连接真实测试库）
+  # 【安全提示】建议使用环境变量配置数据库密码
   datasource:
     url: jdbc:postgresql://localhost:5432/his_project_test
-    username: postgres
-    password: 123456
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
     # HikariCP 连接池配置
     hikari:
@@ -54,6 +55,17 @@ logging:
 # ============================================================
 # Swagger/Knife4j 配置 - 测试环境
 # ============================================================
+# 覆盖公共配置，启用Swagger和Knife4j（需要认证）
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+knife4j:
+  enable: true
+  production: false
+
 app:
   swagger:
     # 启用 Swagger（测试环境）

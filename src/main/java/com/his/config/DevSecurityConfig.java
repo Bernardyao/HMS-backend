@@ -22,6 +22,14 @@ import java.util.Arrays;
 
 /**
  * dev 环境安全配置：全部放开，便于联调与接口测试。
+ * 
+ * <p><b>重要说明：</b>
+ * <ul>
+ *   <li>{@code @EnableMethodSecurity(prePostEnabled = false)} - 禁用方法级别安全检查</li>
+ *   <li>虽然代码中使用了 {@code @PreAuthorize} 注解，但在 dev 环境下<b>不生效</b></li>
+ *   <li>所有接口完全开放，无需认证，方便开发调试</li>
+ *   <li>test/prod 环境会启用 {@code prePostEnabled = true}，此时 @PreAuthorize 才生效</li>
+ * </ul>
  */
 @Slf4j
 @Configuration

@@ -211,9 +211,87 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     /**
-     * 将 Registration 实体转换为 RegistrationVO
-     * 防御性编程: 完整的null检查和异常处理
+     * 【新增】验证并更新挂号状态（带医生身份验证，防止水平越权IDOR）
+     *
+     * <p><b>核心安全逻辑：</b></p>
+     * <ol>
+     *   <li>验证挂号记录存在且未被删除</li>
+     *   <li>验证该挂号的医生ID是否与当前医生ID相同</li>
+     *   <li>如果医生ID不匹配，抛出异常：只有拥有该挂号的医生才能更新</li>
+     *   <li>然后执行updateStatus()中的所有验证（状态合法性、日期验证等）</li>
+     * </ol>
+     *
+     * <p><b>IDOR防御：</b>通过将doctorId从JWT Token中获取，而不是来自URL参数，
+     * 确保医生无法伪造其他医生的身份来更新他人的挂号。</p>
+     *
+     * @param regId 挂号记录ID
+     * @param currentDoctorId 当前医生ID（从JWT Token中提取，绝对可信）
+     * @param newStatus 新状态
+     * @throws IllegalArgumentException 如果挂号不存在或医生无权限
      */
+    @Override
+    public void validateAndUpdateStatus(Long regId, Long currentDoctorId, RegStatusEnum newStatus) {
+        // 防御性编程1: 参数非空验证
+        if (regId == null || regId <= 0) {
+            log.error("【IDOR防御】验证更新挂号状态失败: 挂号ID无效 - {}", regId);
+            throw new IllegalArgumentException("挂号ID必须大于0，当前值: " + regId);
+        }
+        
+        if (currentDoctorId == null || currentDoctorId <= 0) {
+            log.error("【IDOR防御】验证更新挂号状态失败: 当前医生ID无效 - {}", currentDoctorId);
+            throw new IllegalArgumentException("医生ID无效");
+        }
+        
+        if (newStatus == null) {
+            log.error("【IDOR防御】验证更新挂号状态失败: 新状态为null，挂号ID: {}", regId);
+            throw new IllegalArgumentException("新状态不能为空");
+        }
+
+        log.info("【IDOR防御】验证并更新挂号状态，挂号ID: {}, 当前医生ID: {}, 新状态: {}", 
+                regId, currentDoctorId, newStatus);
+
+        // 防御性编程2: 查询挂号记录及其医生信息
+        Registration registration = registrationRepository.findById(regId)
+                .orElseThrow(() -> {
+                    log.warn("【IDOR防御】验证失败: 挂号记录不存在，ID: {}, 医生ID: {}", regId, currentDoctorId);
+                    return new IllegalArgumentException("挂号记录不存在，ID: " + regId);
+                });
+        
+        // 防御性编程3: 检查记录是否被删除
+        if (registration.getIsDeleted() != null && registration.getIsDeleted() == 1) {
+            log.warn("【IDOR防御】验证失败: 挂号记录已被删除，ID: {}, 医生ID: {}", regId, currentDoctorId);
+            throw new IllegalArgumentException("该挂号记录已被删除，无法操作");
+        }
+
+        // 【关键安全检查】验证医生身份
+        // 获取该挂号记录的医生ID
+        if (registration.getDoctor() == null || registration.getDoctor().getMainId() == null) {
+            log.error("【IDOR防御】验证失败: 挂号记录缺少医生信息，ID: {}, 当前医生ID: {}", regId, currentDoctorId);
+            throw new IllegalArgumentException("挂号记录医生信息不完整");
+        }
+
+        Long registrationDoctorId = registration.getDoctor().getMainId();
+        
+        // ✅ 核心IDOR防御: 对比医生ID
+        if (!registrationDoctorId.equals(currentDoctorId)) {
+            log.warn("【IDOR防御】水平越权攻击被拦截！");
+            log.warn("  - 挂号ID: {}", regId);
+            log.warn("  - 挂号医生ID: {}", registrationDoctorId);
+            log.warn("  - 当前医生ID: {}", currentDoctorId);
+            log.warn("  - 医生尝试修改不属于自己的挂号");
+            
+            throw new IllegalArgumentException(
+                    String.format("无权限操作: 该挂号属于其他医生（ID: %d），您只能操作自己的挂号", registrationDoctorId)
+            );
+        }
+
+        log.info("【IDOR防御】医生身份验证通过，挂号ID: {}, 医生ID: {}", regId, currentDoctorId);
+
+        // 验证通过，调用原有的updateStatus()方法进行状态更新及所有验证
+        updateStatus(regId, newStatus);
+    }
+
+
     private RegistrationVO convertToVO(Registration registration) {
         // 防御性编程: 检查入参
         if (registration == null) {

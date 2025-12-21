@@ -1,5 +1,6 @@
 package com.his.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,28 +11,21 @@ import java.io.Serializable;
  * @param <T> 数据类型
  */
 @Data
+@Schema(description = "统一响应结果")
 public class Result<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 状态码
-     */
+    @Schema(description = "响应状态码（200=成功, 400=失败）", example = "200")
     private Integer code;
 
-    /**
-     * 响应消息
-     */
+    @Schema(description = "响应消息", example = "操作成功")
     private String message;
 
-    /**
-     * 响应数据
-     */
+    @Schema(description = "响应数据")
     private T data;
 
-    /**
-     * 时间戳
-     */
+    @Schema(description = "时间戳", example = "1701417600000")
     private Long timestamp;
 
     public Result() {

@@ -1,5 +1,6 @@
 package com.his.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -11,92 +12,59 @@ import java.time.LocalDateTime;
  * 挂号响应 VO
  */
 @Data
+@Schema(description = "挂号信息")
 public class RegistrationVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 挂号记录 ID
-     */
+    @Schema(description = "挂号记录 ID", example = "1")
     private Long id;
 
-    /**
-     * 挂号流水号
-     */
+    @Schema(description = "挂号流水号", example = "REG20231201001")
     private String regNo;
 
-    /**
-     * 患者姓名
-     */
+    @Schema(description = "患者姓名", example = "张三")
     private String patientName;
 
-    /**
-     * 患者 ID
-     */
+    @Schema(description = "患者 ID", example = "1001")
     private Long patientId;
 
-    /**
-     * 患者性别（0=女, 1=男, 2=未知）
-     */
+    @Schema(description = "患者性别（0=女, 1=男, 2=未知）", example = "1")
     private Short gender;
 
-    /**
-     * 患者年龄
-     */
+    @Schema(description = "患者年龄", example = "35")
     private Short age;
 
-    /**
-     * 科室 ID
-     */
+    @Schema(description = "科室 ID", example = "10")
     private Long deptId;
 
-    /**
-     * 科室名称
-     */
+    @Schema(description = "科室名称", example = "内科")
     private String deptName;
 
-    /**
-     * 医生 ID
-     */
+    @Schema(description = "医生 ID", example = "100")
     private Long doctorId;
 
-    /**
-     * 医生姓名
-     */
+    @Schema(description = "医生姓名", example = "李医生")
     private String doctorName;
 
-    /**
-     * 挂号状态（0=待就诊, 1=已就诊, 2=已取消）
-     */
+    @Schema(description = "挂号状态（0=待就诊, 1=已就诊, 2=已取消）", example = "0")
     private Short status;
 
-    /**
-     * 状态描述
-     */
+    @Schema(description = "状态描述", example = "待就诊")
     private String statusDesc;
 
-    /**
-     * 就诊日期
-     */
+    @Schema(description = "就诊日期", example = "2023-12-01", type = "string", format = "date")
     private LocalDate visitDate;
 
-    /**
-     * 挂号费
-     */
+    @Schema(description = "挂号费", example = "15.00")
     private BigDecimal registrationFee;
 
-    /**
-     * 排队号
-     */
+    @Schema(description = "排队号", example = "A001")
     private String queueNo;
 
-    /**
-     * 预约时间
-     */
+    @Schema(description = "预约时间", example = "2023-12-01T09:00:00", type = "string", format = "date-time")
     private LocalDateTime appointmentTime;
 
-    /**
-     * 创建时间
-     */
+    @Schema(description = "创建时间", example = "2023-12-01T08:30:00", type = "string", format = "date-time")
     private LocalDateTime createdAt;
 }
