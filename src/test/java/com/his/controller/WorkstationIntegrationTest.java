@@ -138,7 +138,7 @@ public class WorkstationIntegrationTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("1. 测试搜索药品 - 应返回MedicineVO格式")
     void testSearchMedicines() throws Exception {
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                 .param("keyword", "阿莫")
                 .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -165,7 +165,7 @@ public class WorkstationIntegrationTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("2. 测试查询药品详情 - 应返回MedicineVO格式")
     void testGetMedicineById() throws Exception {
-        mockMvc.perform(get("/api/medicine/{id}", testMedicineId)
+        mockMvc.perform(get("/api/common/medicines/{id}", testMedicineId)
                 .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -190,7 +190,7 @@ public class WorkstationIntegrationTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("3. 测试查询不存在的药品 - 应返回400错误")
     void testGetMedicineById_NotFound() throws Exception {
-        mockMvc.perform(get("/api/medicine/{id}", 999999L)
+        mockMvc.perform(get("/api/common/medicines/{id}", 999999L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -218,7 +218,7 @@ public class WorkstationIntegrationTest {
         dto.setDoctorAdvice("注意休息，多饮水");
         dto.setStatus((short) 1);
 
-        MvcResult result = mockMvc.perform(post("/api/medical-record/save")
+        MvcResult result = mockMvc.perform(post("/api/doctor/medical-records/save")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -257,7 +257,7 @@ public class WorkstationIntegrationTest {
     void testGetMedicalRecordById() throws Exception {
         Assumptions.assumeTrue(testRecordId != null, "需要先创建病历");
 
-        mockMvc.perform(get("/api/medical-record/{id}", testRecordId))
+        mockMvc.perform(get("/api/doctor/medical-records/{id}", testRecordId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -274,7 +274,7 @@ public class WorkstationIntegrationTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("6. 测试根据挂号单查询病历 - 应返回MedicalRecordVO格式")
     void testGetMedicalRecordByRegistrationId() throws Exception {
-        mockMvc.perform(get("/api/medical-record/by-registration/{registrationId}", testRegistrationId))
+        mockMvc.perform(get("/api/doctor/medical-records/by-registration/{registrationId}", testRegistrationId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -309,7 +309,7 @@ public class WorkstationIntegrationTest {
         items.add(item1);
         dto.setItems(items);
 
-        MvcResult result = mockMvc.perform(post("/api/prescription/create")
+        MvcResult result = mockMvc.perform(post("/api/doctor/prescriptions/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -348,7 +348,7 @@ public class WorkstationIntegrationTest {
     void testGetPrescriptionById() throws Exception {
         Assumptions.assumeTrue(testPrescriptionId != null, "需要先创建处方");
 
-        mockMvc.perform(get("/api/prescription/{id}", testPrescriptionId))
+        mockMvc.perform(get("/api/doctor/prescriptions/{id}", testPrescriptionId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -370,7 +370,7 @@ public class WorkstationIntegrationTest {
     void testGetPrescriptionsByRecordId() throws Exception {
         Assumptions.assumeTrue(testRecordId != null, "需要先创建病历");
 
-        mockMvc.perform(get("/api/prescription/by-record/{recordId}", testRecordId))
+        mockMvc.perform(get("/api/doctor/prescriptions/by-record/{recordId}", testRecordId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -398,7 +398,7 @@ public class WorkstationIntegrationTest {
         items.add(item);
         dto.setItems(items);
 
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -434,7 +434,7 @@ public class WorkstationIntegrationTest {
         items.add(item);
         dto.setItems(items);
 
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -452,7 +452,7 @@ public class WorkstationIntegrationTest {
     void testReviewPrescription() throws Exception {
         Assumptions.assumeTrue(testPrescriptionId != null, "需要先创建处方");
 
-        mockMvc.perform(post("/api/prescription/{id}/review", testPrescriptionId)
+        mockMvc.perform(post("/api/pharmacist/prescriptions/{id}/review", testPrescriptionId)
                 .param("reviewDoctorId", "2")
                 .param("remark", "处方合理，准予发药"))
                 .andDo(print())
@@ -466,12 +466,13 @@ public class WorkstationIntegrationTest {
     @Test
     @Order(13)
     @WithMockUser(roles = "NURSE")
-    @DisplayName("13. 测试无权限访问 - 护士角色不能搜索药品")
+    @DisplayName("13. 测试公共API访问 - 护士角色可以搜索药品")
     void testAccessDenied_Nurse() throws Exception {
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                 .param("keyword", "阿莫"))
                 .andDo(print())
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     @Test
@@ -481,7 +482,7 @@ public class WorkstationIntegrationTest {
     void testAccessDenied_DoctorReview() throws Exception {
         Assumptions.assumeTrue(testPrescriptionId != null, "需要先创建处方");
 
-        mockMvc.perform(post("/api/prescription/{id}/review", testPrescriptionId)
+        mockMvc.perform(post("/api/pharmacist/prescriptions/{id}/review", testPrescriptionId)
                 .param("reviewDoctorId", "2")
                 .param("remark", "测试"))
                 .andDo(print())

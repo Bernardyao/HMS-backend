@@ -166,7 +166,7 @@ class DoctorWorkstationIntegrationTest {
     @DisplayName("1. 测试搜索药品 - 根据名称模糊查询")
     @WithMockUser(roles = "DOCTOR")
     void testSearchMedicinesByName() throws Exception {
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                         .param("keyword", "阿莫西林")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -182,7 +182,7 @@ class DoctorWorkstationIntegrationTest {
     @DisplayName("2. 测试搜索药品 - 根据编码查询")
     @WithMockUser(roles = "DOCTOR")
     void testSearchMedicinesByCode() throws Exception {
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                         .param("keyword", "MED001")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -197,7 +197,7 @@ class DoctorWorkstationIntegrationTest {
     @DisplayName("3. 测试查询药品详情")
     @WithMockUser(roles = "DOCTOR")
     void testGetMedicineById() throws Exception {
-        mockMvc.perform(get("/api/medicine/{id}", testMedicine1Id)
+        mockMvc.perform(get("/api/common/medicines/{id}", testMedicine1Id)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -226,7 +226,7 @@ class DoctorWorkstationIntegrationTest {
         dto.setDoctorAdvice("注意休息，多饮水");
         dto.setStatus((short) 1);
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -250,7 +250,7 @@ class DoctorWorkstationIntegrationTest {
         dto1.setChiefComplaint("初次主诉");
         dto1.setDiagnosis("初步诊断");
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto1)))
                 .andExpect(status().isOk())
@@ -262,7 +262,7 @@ class DoctorWorkstationIntegrationTest {
         dto2.setChiefComplaint("更新后的主诉");
         dto2.setDiagnosis("更新后的诊断");
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto2)))
                 .andDo(print())
@@ -287,13 +287,13 @@ class DoctorWorkstationIntegrationTest {
         dto.setRegistrationId(testRegistrationId);
         dto.setChiefComplaint("测试主诉");
 
-        mockMvc.perform(post("/api/medical-record/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/doctor/medical-records/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
 
         // 再查询
-        mockMvc.perform(get("/api/medical-record/by-registration/{registrationId}", testRegistrationId)
+        mockMvc.perform(get("/api/doctor/medical-records/by-registration/{registrationId}", testRegistrationId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -314,7 +314,7 @@ class DoctorWorkstationIntegrationTest {
         recordDTO.setDiagnosis("上呼吸道感染");
         recordDTO.setStatus((short) 1);
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(recordDTO)))
                 .andExpect(status().isOk());
@@ -350,7 +350,7 @@ class DoctorWorkstationIntegrationTest {
         dto.setItems(items);
 
         // 预期总金额 = 阿莫西林(12.5 * 2) + 布洛芬(8.8 * 1) = 25.0 + 8.8 = 33.8
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -373,7 +373,7 @@ class DoctorWorkstationIntegrationTest {
         recordDTO.setRegistrationId(testRegistrationId);
         recordDTO.setDiagnosis("测试诊断");
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(recordDTO)))
                 .andExpect(status().isOk());
@@ -390,7 +390,7 @@ class DoctorWorkstationIntegrationTest {
         dto.setItems(items);
 
         // 数据库中阿莫西林单价为 12.5，数量5，预期总金额 = 12.5 * 5 = 62.5
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -398,7 +398,7 @@ class DoctorWorkstationIntegrationTest {
                 .andExpect(jsonPath("$.data.totalAmount").value(62.50));
 
         // 验证处方明细中的单价是从数据库读取的
-        String response = mockMvc.perform(post("/api/prescription/create")
+        String response = mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andReturn().getResponse().getContentAsString();
@@ -443,7 +443,7 @@ class DoctorWorkstationIntegrationTest {
         items.add(item);
         dto.setItems(items);
 
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -461,7 +461,7 @@ class DoctorWorkstationIntegrationTest {
         MedicalRecordDTO recordDTO = new MedicalRecordDTO();
         recordDTO.setRegistrationId(testRegistrationId);
         recordDTO.setDiagnosis("测试诊断");
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(recordDTO)))
                 .andExpect(status().isOk());
@@ -475,7 +475,7 @@ class DoctorWorkstationIntegrationTest {
         items.add(item);
         dto.setItems(items);
 
-        String response = mockMvc.perform(post("/api/prescription/create")
+        String response = mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andReturn().getResponse().getContentAsString();
@@ -485,7 +485,7 @@ class DoctorWorkstationIntegrationTest {
             response.indexOf(",", response.indexOf("\"mainId\":"))));
 
         // 查询处方详情
-        mockMvc.perform(get("/api/prescription/{id}", prescriptionId)
+        mockMvc.perform(get("/api/doctor/prescriptions/{id}", prescriptionId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -499,7 +499,7 @@ class DoctorWorkstationIntegrationTest {
     @DisplayName("11. 测试权限控制 - 未授权用户无法访问")
     void testUnauthorizedAccess() throws Exception {
         // 在测试环境中，未使用 @WithMockUser 时应该返回 403 Forbidden
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                         .param("keyword", "阿莫西林"))
                 .andDo(print())
                 .andExpect(status().isForbidden());
@@ -511,7 +511,7 @@ class DoctorWorkstationIntegrationTest {
     @WithMockUser(roles = "DOCTOR")
     void testCompleteWorkflow() throws Exception {
         // Step 1: 搜索药品
-        mockMvc.perform(get("/api/medicine/search")
+        mockMvc.perform(get("/api/common/medicines/search")
                         .param("keyword", "阿莫西林"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
@@ -524,7 +524,7 @@ class DoctorWorkstationIntegrationTest {
         recordDTO.setDiagnosis("上呼吸道感染");
         recordDTO.setTreatmentPlan("抗感染治疗");
 
-        mockMvc.perform(post("/api/medical-record/save")
+        mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(recordDTO)))
                 .andExpect(status().isOk())
@@ -550,7 +550,7 @@ class DoctorWorkstationIntegrationTest {
 
         prescriptionDTO.setItems(items);
 
-        mockMvc.perform(post("/api/prescription/create")
+        mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(prescriptionDTO)))
                 .andDo(print())

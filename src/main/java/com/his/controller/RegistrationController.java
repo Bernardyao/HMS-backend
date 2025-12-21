@@ -13,12 +13,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 挂号控制器
+ * 挂号控制器（护士工作站）
  */
-@Tag(name = "挂号管理", description = "患者挂号相关接口，包括挂号、查询、取消等操作")
+@Tag(name = "护士工作站-挂号管理", description = "护士工作站的患者挂号相关接口，包括挂号、查询、取消等操作")
 @Slf4j
 @RestController
-@RequestMapping("/api/registrations")
+@RequestMapping("/api/nurse/registrations")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('NURSE', 'ADMIN')")
 public class RegistrationController {

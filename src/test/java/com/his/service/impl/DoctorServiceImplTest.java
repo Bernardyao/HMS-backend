@@ -46,8 +46,7 @@ class DoctorServiceImplTest {
         registration.setVisitDate(LocalDate.now());
         registration.setStatus(RegStatusEnum.WAITING.getCode());
 
-        when(registrationRepository.findById(regId))
-                .thenReturn(Optional.of(registration), Optional.of(registration));
+        when(registrationRepository.findById(regId)).thenReturn(Optional.of(registration));
         when(registrationRepository.save(any(Registration.class))).thenAnswer(inv -> inv.getArgument(0));
 
         doctorService.validateAndUpdateStatus(regId, doctorId, RegStatusEnum.COMPLETED);

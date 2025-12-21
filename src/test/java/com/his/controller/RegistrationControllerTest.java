@@ -94,7 +94,7 @@ class RegistrationControllerTest {
         dto.setRegFee(new BigDecimal("15.00"));
 
         // 发送 POST 请求
-        mockMvc.perform(post("/api/registrations")
+        mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -137,7 +137,7 @@ class RegistrationControllerTest {
         dto1.setDoctorId(testDoctorId);
         dto1.setRegFee(new BigDecimal("20.00"));
 
-        mockMvc.perform(post("/api/registrations")
+        mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto1)))
                 .andExpect(status().isOk())
@@ -154,7 +154,7 @@ class RegistrationControllerTest {
         dto2.setDoctorId(testDoctorId2); // 不同的医生
         dto2.setRegFee(new BigDecimal("20.00"));
 
-        mockMvc.perform(post("/api/registrations")
+        mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto2)))
                 .andDo(print())
@@ -174,7 +174,7 @@ class RegistrationControllerTest {
         dto.setPatientName("赵六");
         // 缺少身份证号
 
-        mockMvc.perform(post("/api/registrations")
+        mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -197,7 +197,7 @@ class RegistrationControllerTest {
         dto.setDoctorId(testDoctorId);
         dto.setRegFee(new BigDecimal("25.00"));
 
-        String response = mockMvc.perform(post("/api/registrations")
+        String response = mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -208,7 +208,7 @@ class RegistrationControllerTest {
                 .get("data").get("id").asLong();
 
         // 查询挂号记录
-        mockMvc.perform(get("/api/registrations/{id}", registrationId))
+        mockMvc.perform(get("/api/nurse/registrations/{id}", registrationId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -230,7 +230,7 @@ class RegistrationControllerTest {
         dto.setDoctorId(testDoctorId);
         dto.setRegFee(new BigDecimal("30.00"));
 
-        String response = mockMvc.perform(post("/api/registrations")
+        String response = mockMvc.perform(post("/api/nurse/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -240,7 +240,7 @@ class RegistrationControllerTest {
                 .get("data").get("id").asLong();
 
         // 取消挂号
-        mockMvc.perform(put("/api/registrations/{id}/cancel", registrationId)
+        mockMvc.perform(put("/api/nurse/registrations/{id}/cancel", registrationId)
                         .param("reason", "临时有事"))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -248,7 +248,7 @@ class RegistrationControllerTest {
                 .andExpect(jsonPath("$.message").value("挂号已取消"));
 
         // 验证状态已变更
-        mockMvc.perform(get("/api/registrations/{id}", registrationId))
+        mockMvc.perform(get("/api/nurse/registrations/{id}", registrationId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value(2))
                 .andExpect(jsonPath("$.data.statusDesc").value("已取消"));
@@ -257,7 +257,7 @@ class RegistrationControllerTest {
     @Test
     @DisplayName("测试查询不存在的挂号记录")
     void testGetById_NotFound() throws Exception {
-        mockMvc.perform(get("/api/registrations/{id}", 99999L))
+        mockMvc.perform(get("/api/nurse/registrations/{id}", 99999L))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(404))

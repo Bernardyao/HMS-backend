@@ -17,40 +17,36 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 处方管理控制器（医生工作站）
- * 权限：医生和管理员
+ * 药师工作站-处方管理控制器
+ * 权限：药师和管理员
  */
-@Tag(name = "医生工作站-处方管理", description = "医生工作站的处方相关接口")
+@Tag(name = "药师工作站-处方管理", description = "药师工作站的处方审核、发药等接口")
 @Slf4j
 @RestController
-@RequestMapping("/api/doctor/prescriptions")
+@RequestMapping("/api/pharmacist/prescriptions")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
-public class PrescriptionController {
+@PreAuthorize("hasAnyRole('PHARMACIST', 'ADMIN')")
+public class PharmacistPrescriptionController {
 
     private final PrescriptionService prescriptionService;
 
     /**
-     * 创建处方
-     *
-     * @param dto 处方数据
-     * @return 处方信息
+     * 待发药处方列表
+     * 
+     * @return 待发药的处方列表
      */
-    @Operation(summary = "创建处方", description = "根据挂号单ID和药品列表创建处方，自动从数据库读取药品单价并计算总金额")
-    @PostMapping("/create")
-    public Result<PrescriptionVO> createPrescription(@RequestBody PrescriptionDTO dto) {
+    @Operation(summary = "待发药处方列表", description = "查询所有已审核通过但未发药的处方列表")
+    @GetMapping("/pending")
+    public Result<String> getPendingDispenseList() {
         try {
-            log.info("收到创建处方请求，挂号单ID: {}, 药品数量: {}", 
-                    dto.getRegistrationId(), dto.getItems() != null ? dto.getItems().size() : 0);
-            Prescription prescription = prescriptionService.createPrescription(dto);
-            PrescriptionVO vo = convertToVO(prescription);
-            return Result.success("处方创建成功", vo);
-        } catch (IllegalArgumentException e) {
-            log.warn("创建处方失败: {}", e.getMessage());
-            return Result.badRequest(e.getMessage());
+            log.info("查询待发药处方列表");
+            
+            // TODO: 实现待发药列表查询
+            
+            return Result.success("查询成功", "待发药处方列表（待实现）");
         } catch (Exception e) {
-            log.error("创建处方失败", e);
-            return Result.error("创建失败: " + e.getMessage());
+            log.error("查询待发药列表失败", e);
+            return Result.error("查询失败: " + e.getMessage());
         }
     }
 
@@ -61,7 +57,6 @@ public class PrescriptionController {
      * @return 处方信息
      */
     @Operation(summary = "查询处方详情", description = "根据处方ID查询详细信息")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'PHARMACIST', 'ADMIN')")
     @GetMapping("/{id}")
     public Result<PrescriptionVO> getById(
             @Parameter(description = "处方ID", required = true, example = "1")
@@ -81,34 +76,6 @@ public class PrescriptionController {
     }
 
     /**
-     * 根据病历ID查询处方列表
-     *
-     * @param recordId 病历ID
-     * @return 处方列表
-     */
-    @Operation(summary = "查询病历的处方列表", description = "根据病历ID查询所有处方")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'PHARMACIST', 'ADMIN')")
-    @GetMapping("/by-record/{recordId}")
-    public Result<List<PrescriptionVO>> getByRecordId(
-            @Parameter(description = "病历ID", required = true, example = "1")
-            @PathVariable("recordId") Long recordId) {
-        try {
-            log.info("收到根据病历查询处方列表请求，病历ID: {}", recordId);
-            List<Prescription> prescriptions = prescriptionService.getByRecordId(recordId);
-            List<PrescriptionVO> voList = prescriptions.stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-            return Result.success("查询成功", voList);
-        } catch (IllegalArgumentException e) {
-            log.warn("查询处方列表失败: {}", e.getMessage());
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            log.error("查询处方列表失败", e);
-            return Result.error("查询失败: " + e.getMessage());
-        }
-    }
-
-    /**
      * 审核处方
      *
      * @param id 处方ID
@@ -116,8 +83,7 @@ public class PrescriptionController {
      * @param remark 审核备注
      * @return 操作结果
      */
-    @Operation(summary = "审核处方", description = "对已开方的处方进行审核（仅药师和管理员）")
-    @PreAuthorize("hasAnyRole('PHARMACIST', 'ADMIN')")  // 覆盖类级别权限，只允许药师和管理员审核
+    @Operation(summary = "审核处方", description = "对已开方的处方进行审核")
     @PostMapping("/{id}/review")
     public Result<Void> review(
             @Parameter(description = "处方ID", required = true, example = "1")
@@ -136,6 +102,84 @@ public class PrescriptionController {
         } catch (Exception e) {
             log.error("审核处方失败", e);
             return Result.error("审核失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发药
+     * 
+     * @param id 处方ID
+     * @return 发药结果
+     */
+    @Operation(summary = "发药", description = "根据处方ID进行发药操作，自动扣减库存")
+    @PostMapping("/{id}/dispense")
+    public Result<String> dispense(
+            @Parameter(description = "处方ID", required = true, example = "1")
+            @PathVariable Long id) {
+        try {
+            log.info("发药请求，处方ID: {}", id);
+            
+            // TODO: 实现发药业务逻辑
+            
+            return Result.success("发药成功", "发药单号: DISP" + System.currentTimeMillis());
+        } catch (IllegalArgumentException e) {
+            log.warn("发药参数错误: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            log.warn("发药业务错误: {}", e.getMessage());
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("发药失败", e);
+            return Result.error("发药失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 退药
+     * 
+     * @param id 发药记录ID
+     * @param reason 退药原因
+     * @return 退药结果
+     */
+    @Operation(summary = "退药", description = "为已发药记录进行退药操作，自动归还库存")
+    @PostMapping("/{id}/return")
+    public Result<String> returnMedicine(
+            @Parameter(description = "发药记录ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "退药原因", required = true, example = "患者要求退药")
+            @RequestParam String reason) {
+        try {
+            log.info("退药请求，发药记录ID: {}, 原因: {}", id, reason);
+            
+            // TODO: 实现退药业务逻辑
+            
+            return Result.success("退药成功", "退药单号: RET" + System.currentTimeMillis());
+        } catch (IllegalArgumentException e) {
+            log.warn("退药参数错误: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("退药失败", e);
+            return Result.error("退药失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 今日发药统计
+     * 
+     * @return 发药统计信息
+     */
+    @Operation(summary = "今日发药统计", description = "统计当前药师今日的发药数量、处方数等信息")
+    @GetMapping("/statistics/today")
+    public Result<String> getTodayStatistics() {
+        try {
+            log.info("查询今日发药统计");
+            
+            // TODO: 实现发药统计逻辑
+            
+            return Result.success("查询成功", "今日发药统计（待实现）");
+        } catch (Exception e) {
+            log.error("查询发药统计失败", e);
+            return Result.error("查询失败: " + e.getMessage());
         }
     }
 

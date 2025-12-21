@@ -106,7 +106,7 @@ class BasicDataControllerTest {
 
     @Test
     void testGetDepartments_Success() throws Exception {
-        mockMvc.perform(get("/api/basic/departments")
+        mockMvc.perform(get("/api/common/data/departments")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -129,7 +129,7 @@ class BasicDataControllerTest {
         // 再清空所有科室
         departmentRepository.deleteAll();
 
-        mockMvc.perform(get("/api/basic/departments")
+        mockMvc.perform(get("/api/common/data/departments")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -140,7 +140,7 @@ class BasicDataControllerTest {
 
     @Test
     void testGetDoctorsByDepartment_Success() throws Exception {
-        mockMvc.perform(get("/api/basic/doctors")
+        mockMvc.perform(get("/api/common/data/doctors")
                         .param("deptId", testDepartment1.getMainId().toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -166,7 +166,7 @@ class BasicDataControllerTest {
     @Test
     void testGetDoctorsByDepartment_EmptyList() throws Exception {
         // 查询外科的医生（没有医生）
-        mockMvc.perform(get("/api/basic/doctors")
+        mockMvc.perform(get("/api/common/data/doctors")
                         .param("deptId", testDepartment2.getMainId().toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -191,7 +191,7 @@ class BasicDataControllerTest {
 
     @Test
     void testGetDoctorsByDepartment_MissingDeptId() throws Exception {
-        mockMvc.perform(get("/api/basic/doctors")
+        mockMvc.perform(get("/api/common/data/doctors")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest()); // 缺少必需参数
@@ -200,7 +200,7 @@ class BasicDataControllerTest {
     @Test
     void testGetDoctorsByDepartment_ExcludesInactiveDoctors() throws Exception {
         // 验证停诊医生不会被返回
-        mockMvc.perform(get("/api/basic/doctors")
+        mockMvc.perform(get("/api/common/data/doctors")
                         .param("deptId", testDepartment1.getMainId().toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -213,7 +213,7 @@ class BasicDataControllerTest {
     @Test
     void testGetDoctorsByDepartment_OrderedByCode() throws Exception {
         // 验证医生列表按照编码排序
-        mockMvc.perform(get("/api/basic/doctors")
+        mockMvc.perform(get("/api/common/data/doctors")
                         .param("deptId", testDepartment1.getMainId().toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())

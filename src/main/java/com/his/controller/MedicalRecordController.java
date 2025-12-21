@@ -14,13 +14,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 病历管理控制器
+ * 病历管理控制器（医生工作站）
  * 权限：医生和管理员
  */
-@Tag(name = "病历管理", description = "电子病历相关接口")
+@Tag(name = "医生工作站-病历管理", description = "医生工作站的电子病历相关接口")
 @Slf4j
 @RestController
-@RequestMapping("/api/medical-record")
+@RequestMapping("/api/doctor/medical-records")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
 public class MedicalRecordController {

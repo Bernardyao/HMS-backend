@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 基础数据接口控制器（用于前端挂号界面）
+ * 公共数据接口控制器（用于各工作站）
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/basic")
+@RequestMapping("/api/common/data")
 @RequiredArgsConstructor
-@Tag(name = "基础数据接口", description = "提供科室、医生等基础数据查询，用于前端挂号界面")
+@Tag(name = "公共接口-基础数据", description = "提供科室、医生等基础数据查询，供各工作站使用")
 public class BasicDataController {
 
     private final BasicDataService basicDataService;
