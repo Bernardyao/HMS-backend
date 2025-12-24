@@ -34,16 +34,23 @@ bin/
 *.tmp
 *.temp
 
-# Ignore dev docs directory
+# Docs: ignore all, but allow specific files and API folder
 docs/*
-
-# Allow specific files
+!docs/
 !docs/todo-frontend.md
 !docs/todo-backend.md
 !docs/dev-process-3person.md
 !docs/todo-testing.md
 !docs/DEPLOY_UBUNTU.md
-！docs/API/*
+!docs/API/
+!docs/API/**
+
+# Local tools / assistants
 .copilot/
-GEMINI.md
+
+# Env / local config
+.env
+
+# Misc
 logs/
+GEMINI.md
