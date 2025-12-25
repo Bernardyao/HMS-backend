@@ -54,3 +54,4 @@ docs/*
 # Misc
 logs/
 GEMINI.md
+.github/*

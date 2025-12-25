@@ -17,13 +17,13 @@ spring:
   # 数据源配置 - 开发环境
   # 【安全提示】建议使用环境变量配置数据库密码
   datasource:
-    url: jdbc:postgresql://172.20.192.1:5432/his_project
+    url: jdbc:postgresql://localhost:5432/his_project
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
     # HikariCP 连接池配置
-      connection-timeout: 30000
-      connection-test-query: SELECT 1
+    connection-timeout: 30000
+    connection-test-query: SELECT 1
 
   # JPA/Hibernate 配置 - 开发环境
   jpa:
