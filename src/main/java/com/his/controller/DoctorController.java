@@ -6,6 +6,7 @@ import com.his.entity.Doctor;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.DoctorRepository;
 import com.his.service.DoctorService;
+import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -220,6 +221,86 @@ public class DoctorController {
             return Result.badRequest(e.getMessage());
         } catch (Exception e) {
             log.error("状态更新系统异常", e);
+            return Result.error("系统异常，请联系管理员: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询患者详细信息
+     *
+     * <p><b>【安全特性】</b>强制从 JWT Token 获取医生ID，防止水平越权（IDOR）攻击。
+     * 医生可以查看所有患者的详细信息，用于诊疗参考。
+     *
+     * <p><b>【管理员特权】</b>管理员可以通过 adminPatientId 参数指定要查看的患者。
+     *
+     * @param id 患者ID（必填）
+     * @param adminPatientId 管理员指定查看的患者ID（仅管理员有效）
+     * @return 患者详细信息
+     */
+    @Operation(
+        summary = "查询患者详细信息",
+        description = "<b>【安全特性】强制从JWT Token获取医生ID，防止水平越权（IDOR）攻击</b><br/>" +
+                      "根据患者ID查询患者的完整信息，包括基本信息、联系方式、过敏史、既往病史等。<br/>" +
+                      "<b>【数据脱敏】</b>身份证号、手机号等敏感信息已脱敏处理。<br/>" +
+                      "<b>【管理员特权】</b>管理员可通过 adminPatientId 参数查看任意患者。<br/><br/>" +
+                      "<b>响应示例：</b><br/>" +
+                      "<pre>{\n" +
+                      "  \"code\": 200,\n" +
+                      "  \"message\": \"查询患者信息成功\",\n" +
+                      "  \"data\": {\n" +
+                      "    \"patientId\": 1,\n" +
+                      "    \"name\": \"张三\",\n" +
+                      "    \"gender\": 1,\n" +
+                      "    \"genderDesc\": \"男\",\n" +
+                      "    \"age\": 35,\n" +
+                      "    \"phone\": \"138****5678\",\n" +
+                      "    \"idCard\": \"320***********1234\",\n" +
+                      "    \"allergyHistory\": \"青霉素过敏\",\n" +
+                      "    \"medicalHistory\": \"高血压3年\"\n" +
+                      "  }\n" +
+                      "}</pre>"
+    )
+    @GetMapping("/patients/{id}")
+    public Result<PatientDetailVO> getPatientDetail(
+            @Parameter(description = "患者ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "管理员指定查看的患者ID（仅管理员有效）", required = false)
+            @RequestParam(required = false) Long adminPatientId) {
+        try {
+            Long patientId;
+
+            if (SecurityUtils.isAdmin()) {
+                // 管理员模式
+                if (adminPatientId == null) {
+                    // 如果管理员未指定，使用路径参数
+                    patientId = id;
+                } else {
+                    patientId = adminPatientId;
+                }
+                log.info("【管理员】查看患者信息，患者ID: {}", patientId);
+            } else {
+                // 医生模式 - 使用路径参数
+                patientId = id;
+                Long doctorId = SecurityUtils.getCurrentDoctorId();
+                log.info("【安全】查询患者信息 - 医生ID: {} (从Token获取), 患者ID: {}",
+                        doctorId, patientId);
+            }
+
+            // 调用服务层查询患者详细信息
+            PatientDetailVO patientDetail = doctorService.getPatientDetail(patientId);
+
+            log.info("查询患者信息成功，患者ID: {}, 姓名: {}", patientId, patientDetail.getName());
+            return Result.success("查询患者信息成功", patientDetail);
+
+        } catch (IllegalStateException e) {
+            // SecurityUtils 抛出的异常
+            log.error("【安全】获取当前医生ID失败: {}", e.getMessage());
+            return Result.unauthorized("认证失败，请重新登录");
+        } catch (IllegalArgumentException e) {
+            log.warn("查询患者信息失败: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("查询患者信息系统异常", e);
             return Result.error("系统异常，请联系管理员: " + e.getMessage());
         }
     }

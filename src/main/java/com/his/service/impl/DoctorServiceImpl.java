@@ -1,16 +1,21 @@
 package com.his.service.impl;
 
 import com.his.entity.Department;
+import com.his.entity.Patient;
 import com.his.entity.Registration;
+import com.his.enums.GenderEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.DepartmentRepository;
+import com.his.repository.PatientRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.DoctorService;
+import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +31,7 @@ public class DoctorServiceImpl implements DoctorService {
 
     private final RegistrationRepository registrationRepository;
     private final DepartmentRepository departmentRepository;
+    private final PatientRepository patientRepository;
 
     /**
      * 获取今日候诊列表（支持个人/科室混合视图）
@@ -352,5 +358,111 @@ public class DoctorServiceImpl implements DoctorService {
         vo.setCreatedAt(registration.getCreatedAt());
 
         return vo;
+    }
+
+    /**
+     * 【新增】查询患者详细信息（包含数据脱敏）
+     * 防御性编程: 完整的参数验证和数据脱敏处理
+     *
+     * @param patientId 患者ID
+     * @return 患者详细信息VO
+     * @throws IllegalArgumentException 当患者不存在或已被删除时
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PatientDetailVO getPatientDetail(Long patientId) {
+        log.info("查询患者详细信息，患者ID: {}", patientId);
+
+        // 防御性编程1: 参数验证
+        if (patientId == null || patientId <= 0) {
+            log.error("查询患者详细信息失败: 患者ID无效 - {}", patientId);
+            throw new IllegalArgumentException("患者ID必须大于0，当前值: " + patientId);
+        }
+
+        // 防御性编程2: 查询患者记录
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> {
+                    log.warn("查询患者详细信息失败: 患者不存在，ID: {}", patientId);
+                    return new IllegalArgumentException("患者信息不存在，ID: " + patientId);
+                });
+
+        // 防御性编程3: 检查是否被删除
+        if (patient.getIsDeleted() != null && patient.getIsDeleted() == 1) {
+            log.warn("查询患者详细信息失败: 患者已被删除，ID: {}", patientId);
+            throw new IllegalArgumentException("该患者档案已被删除");
+        }
+
+        log.info("查询患者信息成功，患者ID: {}, 姓名: {}", patientId, patient.getName());
+
+        // 转换为VO（包含脱敏处理）
+        return convertToPatientDetailVO(patient);
+    }
+
+    /**
+     * 转换为患者详细信息VO（带脱敏处理）
+     */
+    private PatientDetailVO convertToPatientDetailVO(Patient patient) {
+        // 防御性编程: 检查入参
+        if (patient == null) {
+            log.error("convertToPatientDetailVO失败: patient为null");
+            throw new IllegalArgumentException("患者信息不能为空");
+        }
+
+        // 获取性别描述
+        String genderDesc = "未知";
+        try {
+            if (patient.getGender() != null) {
+                genderDesc = GenderEnum.fromCode(patient.getGender()).getDescription();
+            }
+        } catch (Exception e) {
+            log.warn("无法解析性别代码: {}", patient.getGender());
+        }
+
+        // 构建VO
+        return PatientDetailVO.builder()
+                .patientId(patient.getMainId())
+                .patientNo(patient.getPatientNo())
+                .name(patient.getName())
+                .gender(patient.getGender())
+                .genderDesc(genderDesc)
+                .age(patient.getAge())
+                .birthDate(patient.getBirthDate())
+                .address(patient.getAddress())
+                .medicalCardNo(patient.getMedicalCardNo())
+                .bloodType(patient.getBloodType())
+                .allergyHistory(patient.getAllergyHistory())
+                .medicalHistory(patient.getMedicalHistory())
+                .emergencyContact(patient.getEmergencyContact())
+                .createdAt(patient.getCreatedAt())
+                .updatedAt(patient.getUpdatedAt())
+                // 脱敏处理敏感信息
+                .phone(maskPhone(patient.getPhone()))
+                .idCard(maskIdCard(patient.getIdCard()))
+                .emergencyPhone(maskPhone(patient.getEmergencyPhone()))
+                .build();
+    }
+
+    /**
+     * 身份证号脱敏
+     * 保留前3位和后4位，中间用11个*替代
+     * 示例: 320***********1234
+     */
+    private String maskIdCard(String idCard) {
+        if (!StringUtils.hasText(idCard) || idCard.length() < 8) {
+            return idCard;
+        }
+        return idCard.substring(0, 3) + "***********" + idCard.substring(idCard.length() - 4);
+    }
+
+    /**
+     * 手机号脱敏
+     * 保留前3位和后4位，中间用4个*替代
+     * 示例: 138****5678
+     */
+    private String maskPhone(String phone) {
+        if (!StringUtils.hasText(phone) || phone.length() < 8) {
+            return phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
     }
 }
