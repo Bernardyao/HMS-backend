@@ -1,6 +1,7 @@
 package com.his.service;
 
 import com.his.enums.RegStatusEnum;
+import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
 
 import java.util.List;
@@ -44,5 +45,21 @@ public interface DoctorService {
      * @throws IllegalArgumentException 如果挂号不存在或医生无权限
      */
     void validateAndUpdateStatus(Long regId, Long currentDoctorId, RegStatusEnum newStatus);
+
+    /**
+     * 【新增】查询患者详细信息（包含数据脱敏）
+     *
+     * <p><b>业务规则：</b></p>
+     * <ul>
+     *   <li>根据患者ID查询完整患者信息</li>
+     *   <li>自动脱敏敏感信息（身份证、手机号）</li>
+     *   <li>验证患者记录有效性（未删除）</li>
+     * </ul>
+     *
+     * @param patientId 患者ID
+     * @return 患者详细信息VO
+     * @throws IllegalArgumentException 当患者不存在或已被删除时
+     */
+    PatientDetailVO getPatientDetail(Long patientId);
 }
 

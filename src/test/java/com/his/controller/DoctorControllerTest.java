@@ -73,6 +73,7 @@ class DoctorControllerTest {
 
     private Long testDeptId;
     private Long testDoctorId;
+    private Long testPatientId;  // 新增：用于测试患者查询
     private Long testReg1Id;
     private Long testReg2Id;
     private Long testReg3Id;
@@ -129,8 +130,14 @@ class DoctorControllerTest {
         patient1.setGender((short) 1);
         patient1.setAge((short) 34);
         patient1.setPhone("13900139001");
+        patient1.setBloodType("A");
+        patient1.setAllergyHistory("青霉素过敏");
+        patient1.setMedicalHistory("高血压3年");
+        patient1.setEmergencyContact("张夫人");
+        patient1.setEmergencyPhone("13900139999");
         patient1.setIsDeleted((short) 0);
         Patient savedPatient1 = patientRepository.save(patient1);
+        testPatientId = savedPatient1.getMainId();  // 保存患者ID用于测试
 
         // 创建测试患者2
         Patient patient2 = new Patient();
@@ -529,5 +536,125 @@ class DoctorControllerTest {
                 .andExpect(jsonPath("$.code").value(400))
                 // 可能触发"只有待就诊"或"已经是该状态"的提示
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    // ==================== 患者查询测试用例 ====================
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 成功场景")
+    void testGetPatientDetail_Success() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", testPatientId)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value(containsString("查询患者信息成功")))
+                .andExpect(jsonPath("$.data.patientId").value(testPatientId))
+                .andExpect(jsonPath("$.data.name").value("张三"))
+                .andExpect(jsonPath("$.data.gender").value(1))
+                .andExpect(jsonPath("$.data.genderDesc").value("男"))
+                .andExpect(jsonPath("$.data.age").value(34))
+                // 验证脱敏字段（手机号格式）
+                .andExpect(jsonPath("$.data.phone").value(matchesPattern("^\\d{3}\\*{4}\\d{4}$")))
+                // 验证身份证号脱敏格式（不验证具体后4位，因为测试数据动态生成）
+                .andExpect(jsonPath("$.data.idCard").value(matchesPattern("^\\d{3}\\*{11}\\d{4}$")))
+                // 验证医疗信息
+                .andExpect(jsonPath("$.data.bloodType").value("A"))
+                .andExpect(jsonPath("$.data.allergyHistory").value("青霉素过敏"))
+                .andExpect(jsonPath("$.data.medicalHistory").value("高血压3年"))
+                .andExpect(jsonPath("$.data.emergencyContact").value("张夫人"))
+                .andExpect(jsonPath("$.data.emergencyPhone").value("139****9999"));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 验证手机号脱敏格式")
+    void testGetPatientDetail_PhoneMasked() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", testPatientId)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.phone").value(matchesPattern("^\\d{3}\\*{4}\\d{4}$")));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 验证身份证号脱敏格式")
+    void testGetPatientDetail_IdCardMasked() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", testPatientId)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.idCard").value(matchesPattern("^\\d{3}\\*{11}\\d{4}$")));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 患者不存在")
+    void testGetPatientDetail_PatientNotFound() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", 99999L)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("患者信息不存在")));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 患者ID无效（负数）")
+    void testGetPatientDetail_InvalidPatientId_Negative() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", -1L)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("患者ID必须大于0")));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 患者ID无效（0）")
+    void testGetPatientDetail_InvalidPatientId_Zero() throws Exception {
+        mockMvc.perform(get("/api/doctor/patients/{id}", 0L)
+                        .with(authentication(setupDoctorAuthentication()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("患者ID必须大于0")));
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 未认证访问")
+    void testGetPatientDetail_Unauthorized() throws Exception {
+        // Spring Security在未认证时可能返回401或403，取决于配置
+        Integer[] expectedStatuses = {401, 403};
+        mockMvc.perform(get("/api/doctor/patients/{id}", testPatientId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().is(org.hamcrest.Matchers.isIn(expectedStatuses))); // 未认证返回401，认证但无权限返回403
+    }
+
+    @Test
+    @DisplayName("测试查询患者详细信息 - 管理员模式")
+    void testGetPatientDetail_AdminMode() throws Exception {
+        // 创建管理员认证token
+        JwtAuthenticationToken adminAuth = new JwtAuthenticationToken(
+                1L,              // userId
+                "admin",         // username
+                "ADMIN",         // role
+                null             // relatedId（管理员可能没有）
+        );
+
+        mockMvc.perform(get("/api/doctor/patients/{id}", testPatientId)
+                        .param("adminPatientId", String.valueOf(testPatientId))
+                        .with(authentication(adminAuth))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.patientId").value(testPatientId))
+                .andExpect(jsonPath("$.data.name").value("张三"));
     }
 }
