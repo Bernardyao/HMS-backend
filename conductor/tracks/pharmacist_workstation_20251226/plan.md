@@ -1,13 +1,9 @@
 # Track Plan: Pharmacist Workstation (Backend)
 
 ## Phase 1: Core Dispensing Logic
-- [ ] Task: Implement `getPendingDispenseList` in `PrescriptionService`.
-    - Logic: Query prescriptions with status `PAID` (or `APPROVED` depending on business flow).
-- [ ] Task: Implement `dispense(Long prescriptionId)` in `PrescriptionService`.
-    - Logic: Update status to `DISPENSED`, record dispensing pharmacist, and automatically reduce medicine stock.
-    - Transaction: Ensure stock reduction and status update are atomic.
-- [ ] Task: Unit Tests for Dispensing Logic.
-    - Scenarios: Successful dispensing, insufficient stock (should fail), already dispensed (should fail).
+- [x] Task: Implement `getPendingDispenseList` in `PrescriptionService`. 17f8ca1
+- [x] Task: Implement `dispense(Long prescriptionId)` in `PrescriptionService`. 17f8ca1
+- [x] Task: Unit Tests for Dispensing Logic. 17f8ca1
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Core Dispensing Logic'
 
 ## Phase 2: Medicine Return & Inventory
