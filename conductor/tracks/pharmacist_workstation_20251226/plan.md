@@ -17,8 +17,8 @@
 ## Phase 3: Statistics & Reporting
 - [x] Task: Implement `getTodayStatistics` for Pharmacists. 8f2cc0e
     - Metrics: Total prescriptions dispensed today, total items, total amount.
-- [ ] Task: Enhance `PharmacistMedicineController` and `PharmacistPrescriptionController` to use new service methods.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Statistics & Reporting'
+- [x] Task: Enhance `PharmacistMedicineController` and `PharmacistPrescriptionController` to use new service methods. a4f3102, b52758e
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Statistics & Reporting' [checkpoint: cecda66]
 
 ## Phase 4: Integration & Documentation
 - [ ] Task: Comprehensive Integration Tests for Pharmacist Workstation.

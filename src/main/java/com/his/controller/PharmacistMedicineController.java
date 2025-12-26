@@ -116,12 +116,15 @@ public class PharmacistMedicineController {
         try {
             log.info("更新药品库存，药品ID: {}, 数量: {}, 原因: {}", id, quantity, reason);
             
-            // TODO: 实现库存更新逻辑
+            medicineService.updateStock(id, quantity, reason);
             
             return Result.success("库存更新成功", null);
         } catch (IllegalArgumentException e) {
             log.warn("更新库存参数错误: {}", e.getMessage());
             return Result.badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            log.warn("更新库存业务错误: {}", e.getMessage());
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             log.error("更新库存失败", e);
             return Result.error("更新失败: " + e.getMessage());

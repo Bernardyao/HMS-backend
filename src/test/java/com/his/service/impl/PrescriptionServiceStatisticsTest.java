@@ -29,7 +29,7 @@ class PrescriptionServiceStatisticsTest {
     @Test
     void getPharmacistStatistics_returnsDataFromRepository() {
         Long pharmacistId = 100L;
-        PharmacistStatisticsDTO expectedStats = new PharmacistStatisticsDTO(5, new BigDecimal("100.00"), 10);
+        PharmacistStatisticsDTO expectedStats = new PharmacistStatisticsDTO(5L, new BigDecimal("100.00"), 10L);
 
         when(prescriptionRepository.getPharmacistStatistics(eq(pharmacistId), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(expectedStats);
@@ -37,9 +37,9 @@ class PrescriptionServiceStatisticsTest {
         PharmacistStatisticsDTO result = prescriptionService.getPharmacistStatistics(pharmacistId);
 
         assertThat(result).isNotNull();
-        assertThat(result.getDispensedCount()).isEqualTo(5);
+        assertThat(result.getDispensedCount()).isEqualTo(5L);
         assertThat(result.getTotalAmount()).isEqualTo(new BigDecimal("100.00"));
-        assertThat(result.getTotalItems()).isEqualTo(10);
+        assertThat(result.getTotalItems()).isEqualTo(10L);
 
         verify(prescriptionRepository).getPharmacistStatistics(eq(pharmacistId), any(LocalDateTime.class), any(LocalDateTime.class));
     }

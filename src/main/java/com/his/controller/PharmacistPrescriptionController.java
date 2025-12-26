@@ -142,26 +142,29 @@ public class PharmacistPrescriptionController {
     /**
      * 退药
      * 
-     * @param id 发药记录ID
+     * @param id 处方ID
      * @param reason 退药原因
      * @return 退药结果
      */
     @Operation(summary = "退药", description = "为已发药记录进行退药操作，自动归还库存")
     @PostMapping("/{id}/return")
     public Result<String> returnMedicine(
-            @Parameter(description = "发药记录ID", required = true, example = "1")
+            @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable Long id,
             @Parameter(description = "退药原因", required = true, example = "患者要求退药")
             @RequestParam String reason) {
         try {
-            log.info("退药请求，发药记录ID: {}, 原因: {}", id, reason);
+            log.info("退药请求，处方ID: {}, 原因: {}", id, reason);
             
-            // TODO: 实现退药业务逻辑
+            prescriptionService.returnMedicine(id, reason);
             
-            return Result.success("退药成功", "退药单号: RET" + System.currentTimeMillis());
+            return Result.success("退药成功", null);
         } catch (IllegalArgumentException e) {
             log.warn("退药参数错误: {}", e.getMessage());
             return Result.badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            log.warn("退药业务错误: {}", e.getMessage());
+            return Result.error(e.getMessage());
         } catch (Exception e) {
             log.error("退药失败", e);
             return Result.error("退药失败: " + e.getMessage());
@@ -175,13 +178,14 @@ public class PharmacistPrescriptionController {
      */
     @Operation(summary = "今日发药统计", description = "统计当前药师今日的发药数量、处方数等信息")
     @GetMapping("/statistics/today")
-    public Result<String> getTodayStatistics() {
+    public Result<com.his.dto.PharmacistStatisticsDTO> getTodayStatistics() {
         try {
             log.info("查询今日发药统计");
             
-            // TODO: 实现发药统计逻辑
+            Long pharmacistId = SecurityUtils.getCurrentUserId();
+            com.his.dto.PharmacistStatisticsDTO stats = prescriptionService.getPharmacistStatistics(pharmacistId);
             
-            return Result.success("查询成功", "今日发药统计（待实现）");
+            return Result.success("查询成功", stats);
         } catch (Exception e) {
             log.error("查询发药统计失败", e);
             return Result.error("查询失败: " + e.getMessage());

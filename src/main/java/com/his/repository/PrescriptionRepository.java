@@ -89,7 +89,7 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
      * @return 统计数据
      */
     @Query("SELECT new com.his.dto.PharmacistStatisticsDTO(" +
-            "CAST(COUNT(p) AS integer), " +
+            "COUNT(p), " +
             "COALESCE(SUM(p.totalAmount), 0), " +
             "COALESCE(SUM(p.itemCount), 0)) " +
             "FROM Prescription p " +
