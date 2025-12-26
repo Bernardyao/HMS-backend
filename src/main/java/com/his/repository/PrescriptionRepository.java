@@ -80,4 +80,23 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
      */
     @Query("SELECT COUNT(p) FROM Prescription p WHERE p.doctor.mainId = :doctorId AND p.isDeleted = 0")
     long countByDoctorId(@Param("doctorId") Long doctorId);
+
+    /**
+     * 获取药师今日工作统计
+     * @param pharmacistId 药师ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 统计数据
+     */
+    @Query("SELECT new com.his.dto.PharmacistStatisticsDTO(" +
+            "CAST(COUNT(p) AS integer), " +
+            "COALESCE(SUM(p.totalAmount), 0), " +
+            "COALESCE(SUM(p.itemCount), 0)) " +
+            "FROM Prescription p " +
+            "WHERE p.dispenseBy = :pharmacistId " +
+            "AND p.dispenseTime BETWEEN :startTime AND :endTime " +
+            "AND p.isDeleted = 0")
+    com.his.dto.PharmacistStatisticsDTO getPharmacistStatistics(@Param("pharmacistId") Long pharmacistId, 
+                                                                @Param("startTime") LocalDateTime startTime, 
+                                                                @Param("endTime") LocalDateTime endTime);
 }

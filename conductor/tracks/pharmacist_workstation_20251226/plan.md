@@ -15,7 +15,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Medicine Return & Inventory' [checkpoint: 7c6aa3c]
 
 ## Phase 3: Statistics & Reporting
-- [ ] Task: Implement `getTodayStatistics` for Pharmacists.
+- [x] Task: Implement `getTodayStatistics` for Pharmacists. 8f2cc0e
     - Metrics: Total prescriptions dispensed today, total items, total amount.
 - [ ] Task: Enhance `PharmacistMedicineController` and `PharmacistPrescriptionController` to use new service methods.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Statistics & Reporting'

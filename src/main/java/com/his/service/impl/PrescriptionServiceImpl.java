@@ -293,6 +293,31 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         log.info("退药成功，处方ID: {}", id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public com.his.dto.PharmacistStatisticsDTO getPharmacistStatistics(Long pharmacistId) {
+        log.info("获取药师工作统计，药师ID: {}", pharmacistId);
+
+        if (pharmacistId == null) {
+            throw new IllegalArgumentException("药师ID不能为空");
+        }
+
+        LocalDateTime startTime = java.time.LocalDate.now().atStartOfDay();
+        LocalDateTime endTime = java.time.LocalDate.now().atTime(java.time.LocalTime.MAX);
+
+        com.his.dto.PharmacistStatisticsDTO stats = prescriptionRepository.getPharmacistStatistics(pharmacistId, startTime, endTime);
+        
+        // 如果查询结果为null（虽然使用了COALESCE，但以防万一），返回空对象
+        if (stats == null) {
+            return new com.his.dto.PharmacistStatisticsDTO();
+        }
+        
+        log.info("统计结果: 发药单数={}, 总金额={}, 药品总数={}", 
+                stats.getDispensedCount(), stats.getTotalAmount(), stats.getTotalItems());
+        
+        return stats;
+    }
+
     /**
      * 参数校验
      */

@@ -77,4 +77,12 @@ public interface PrescriptionService {
      * @param reason 退药原因
      */
     void returnMedicine(Long id, String reason);
+
+    /**
+     * 获取药师今日工作统计
+     * 
+     * @param pharmacistId 药师ID
+     * @return 统计数据
+     */
+    com.his.dto.PharmacistStatisticsDTO getPharmacistStatistics(Long pharmacistId);
 }
