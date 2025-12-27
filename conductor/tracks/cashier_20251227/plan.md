@@ -29,7 +29,7 @@ Focus: Implementing the service layer for creating charges and processing paymen
     - Extract `restoreInventoryOnly()` method.
     - Update `dispense()` to enforce `PAID(5)` status.
     - **Test:** Regression tests for Dispensing flow.
-- [ ] Task: Implement `ChargeService.processPayment()` with Mock Provider
+- [x] Task: Implement `ChargeService.processPayment()` with Mock Provider (bd33125)
     - Implement payment processing, idempotency, and status updates.
     - Implement Mock Payment simulation.
     - **Test:** Unit/Integration tests for Payment flow and Idempotency.
