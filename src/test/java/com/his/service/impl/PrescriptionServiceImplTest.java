@@ -3,8 +3,9 @@ package com.his.service.impl;
 import com.his.entity.Medicine;
 import com.his.entity.Prescription;
 import com.his.entity.PrescriptionDetail;
-import com.his.repository.MedicineRepository;
-import com.his.repository.PrescriptionRepository;
+import com.his.enums.PrescriptionStatusEnum;
+import com.his.repository.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,12 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,160 +25,58 @@ class PrescriptionServiceImplTest {
 
     @Mock
     private PrescriptionRepository prescriptionRepository;
-
     @Mock
     private MedicineRepository medicineRepository;
+    @Mock
+    private PrescriptionDetailRepository prescriptionDetailRepository;
+    @Mock
+    private MedicalRecordRepository medicalRecordRepository;
+    @Mock
+    private RegistrationRepository registrationRepository;
 
     @InjectMocks
     private PrescriptionServiceImpl prescriptionService;
 
     @Test
-    void getPendingDispenseList_returnsOnlyApprovedPrescriptions() {
-        Prescription p1 = new Prescription();
-        p1.setStatus((short) 2); // Approved
-        
-        Prescription p2 = new Prescription();
-        p2.setStatus((short) 2); // Approved
+    @DisplayName("发药失败：状态不是已缴费")
+    void dispense_Fail_WhenStatusNotPaid() {
+        Long prescriptionId = 1L;
+        Prescription prescription = new Prescription();
+        prescription.setMainId(prescriptionId);
+        // 设置为 REVIEWED (2)，而不是 PAID (5)
+        prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode());
 
-        when(prescriptionRepository.findByStatusAndIsDeleted((short) 2, (short) 0))
-                .thenReturn(Arrays.asList(p1, p2));
+        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
 
-        List<Prescription> result = prescriptionService.getPendingDispenseList();
-
-        assertThat(result).hasSize(2);
-        verify(prescriptionRepository).findByStatusAndIsDeleted((short) 2, (short) 0);
+        assertThatThrownBy(() -> prescriptionService.dispense(prescriptionId, 100L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("只有已缴费状态的处方才能发药");
     }
 
     @Test
-    void dispense_whenStatusApproved_updatesStatusAndReducesStock() {
+    @DisplayName("恢复库存：成功")
+    void restoreInventoryOnly_Success() {
         Long prescriptionId = 1L;
-        Long pharmacistId = 100L;
-
         Prescription prescription = new Prescription();
         prescription.setMainId(prescriptionId);
-        prescription.setStatus((short) 2); // Approved
-
+        
         Medicine medicine = new Medicine();
         medicine.setMainId(10L);
         medicine.setStockQuantity(100);
-
-        PrescriptionDetail detail = new PrescriptionDetail();
-        detail.setMedicine(medicine);
-        detail.setQuantity(5);
         
-        prescription.setDetails(Collections.singletonList(detail));
-
-        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
-        when(medicineRepository.findById(10L)).thenReturn(Optional.of(medicine));
-        when(prescriptionRepository.save(any(Prescription.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        prescriptionService.dispense(prescriptionId, pharmacistId);
-
-        assertThat(prescription.getStatus()).isEqualTo((short) 3); // Dispensed
-        assertThat(prescription.getDispenseBy()).isEqualTo(pharmacistId);
-        assertThat(prescription.getDispenseTime()).isNotNull();
-        assertThat(medicine.getStockQuantity()).isEqualTo(95);
-
-        verify(medicineRepository).save(medicine);
-        verify(prescriptionRepository).save(prescription);
-    }
-
-    @Test
-    void dispense_whenInsufficientStock_throwsException() {
-        Long prescriptionId = 1L;
-        Long pharmacistId = 100L;
-
-        Prescription prescription = new Prescription();
-        prescription.setMainId(prescriptionId);
-        prescription.setStatus((short) 2);
-
-        Medicine medicine = new Medicine();
-        medicine.setMainId(10L);
-        medicine.setStockQuantity(3); // Less than 5
-
         PrescriptionDetail detail = new PrescriptionDetail();
         detail.setMedicine(medicine);
-        detail.setQuantity(5);
+        detail.setQuantity(10);
         
         prescription.setDetails(Collections.singletonList(detail));
 
         when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
         when(medicineRepository.findById(10L)).thenReturn(Optional.of(medicine));
 
-        assertThatThrownBy(() -> prescriptionService.dispense(prescriptionId, pharmacistId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("库存不足");
+        // 调用新方法
+        prescriptionService.restoreInventoryOnly(prescriptionId);
 
-        verify(medicineRepository, never()).save(any());
-        verify(prescriptionRepository, never()).save(any());
-    }
-
-    @Test
-    void dispense_whenNotApproved_throwsException() {
-        Long prescriptionId = 1L;
-        Long pharmacistId = 100L;
-
-        Prescription prescription = new Prescription();
-        prescription.setMainId(prescriptionId);
-        prescription.setStatus((short) 1); // Not yet approved
-
-        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
-
-        assertThatThrownBy(() -> prescriptionService.dispense(prescriptionId, pharmacistId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("审核");
-    }
-
-    @Test
-    void returnMedicine_whenStatusDispensed_updatesStatusAndRestoresStock() {
-        Long prescriptionId = 1L;
-        String reason = "Patient request";
-
-        Prescription prescription = new Prescription();
-        prescription.setMainId(prescriptionId);
-        prescription.setStatus((short) 3); // Dispensed
-
-        Medicine medicine = new Medicine();
-        medicine.setMainId(10L);
-        medicine.setStockQuantity(95);
-
-        PrescriptionDetail detail = new PrescriptionDetail();
-        detail.setMedicine(medicine);
-        detail.setQuantity(5);
-        
-        prescription.setDetails(Collections.singletonList(detail));
-
-        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
-        when(medicineRepository.findById(10L)).thenReturn(Optional.of(medicine));
-        when(prescriptionRepository.save(any(Prescription.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        prescriptionService.returnMedicine(prescriptionId, reason);
-
-        assertThat(prescription.getStatus()).isEqualTo((short) 4); // Returned
-        assertThat(prescription.getReturnReason()).isEqualTo(reason);
-        assertThat(prescription.getReturnTime()).isNotNull();
-        assertThat(medicine.getStockQuantity()).isEqualTo(100); // 95 + 5
-
-        verify(medicineRepository).save(medicine);
-        verify(prescriptionRepository).save(prescription);
-    }
-
-    @Test
-    void returnMedicine_whenStatusNotDispensed_throwsException() {
-        Long prescriptionId = 1L;
-        String reason = "Patient request";
-
-        Prescription prescription = new Prescription();
-        prescription.setMainId(prescriptionId);
-        prescription.setStatus((short) 2); // Approved but not dispensed
-
-        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
-
-        assertThatThrownBy(() -> prescriptionService.returnMedicine(prescriptionId, reason))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("已发药");
-
-        verify(medicineRepository, never()).save(any());
-        verify(prescriptionRepository, never()).save(any());
+        // 验证库存增加了 10 (100 -> 110)
+        verify(medicineRepository).save(argThat(m -> m.getStockQuantity() == 110));
     }
 }

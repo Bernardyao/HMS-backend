@@ -79,6 +79,13 @@ public interface PrescriptionService {
     void returnMedicine(Long id, String reason);
 
     /**
+     * 仅恢复库存（用于退费时调用）
+     *
+     * @param id 处方ID
+     */
+    void restoreInventoryOnly(Long id);
+
+    /**
      * 获取药师今日工作统计
      * 
      * @param pharmacistId 药师ID
