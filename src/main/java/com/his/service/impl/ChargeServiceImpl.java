@@ -10,6 +10,7 @@ import com.his.repository.*;
 import com.his.service.ChargeService;
 import com.his.service.PrescriptionService;
 import com.his.vo.ChargeVO;
+import com.his.vo.DailySettlementVO;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -46,7 +49,6 @@ public class ChargeServiceImpl implements ChargeService {
     public ChargeVO createCharge(CreateChargeDTO dto) {
         log.info("开始创建收费单，挂号单ID: {}", dto.getRegistrationId());
 
-        // 1. 验证挂号单
         Registration registration = registrationRepository.findById(dto.getRegistrationId())
                 .orElseThrow(() -> new IllegalArgumentException("挂号单不存在，ID: " + dto.getRegistrationId()));
 
@@ -58,7 +60,6 @@ public class ChargeServiceImpl implements ChargeService {
             throw new IllegalArgumentException("只有已就诊的挂号单才能进行收费");
         }
 
-        // 2. 验证处方（如果有）
         List<Prescription> prescriptions = new ArrayList<>();
         if (dto.getPrescriptionIds() != null && !dto.getPrescriptionIds().isEmpty()) {
             prescriptions = prescriptionRepository.findAllById(dto.getPrescriptionIds());
@@ -72,13 +73,12 @@ public class ChargeServiceImpl implements ChargeService {
             }
         }
 
-        // 3. 计算金额并创建明细
         List<ChargeDetail> details = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // 挂号费
         if (registration.getRegistrationFee() != null && registration.getRegistrationFee().compareTo(BigDecimal.ZERO) > 0) {
             ChargeDetail regDetail = new ChargeDetail();
+            regDetail.setCharge(null); // Will set later
             regDetail.setItemType("REGISTRATION");
             regDetail.setItemId(registration.getMainId());
             regDetail.setItemName("挂号费");
@@ -87,9 +87,9 @@ public class ChargeServiceImpl implements ChargeService {
             totalAmount = totalAmount.add(registration.getRegistrationFee());
         }
 
-        // 处方费
         for (Prescription p : prescriptions) {
             ChargeDetail pDetail = new ChargeDetail();
+            pDetail.setCharge(null);
             pDetail.setItemType("PRESCRIPTION");
             pDetail.setItemId(p.getMainId());
             pDetail.setItemName("处方药费 (" + p.getPrescriptionNo() + ")");
@@ -98,12 +98,11 @@ public class ChargeServiceImpl implements ChargeService {
             totalAmount = totalAmount.add(p.getTotalAmount());
         }
 
-        // 4. 保存主表
         Charge charge = new Charge();
         charge.setPatient(registration.getPatient());
         charge.setRegistration(registration);
         charge.setChargeNo(generateChargeNo());
-        charge.setChargeType((short) (prescriptions.isEmpty() ? 1 : 2)); // 1=挂号费, 2=药费
+        charge.setChargeType((short) (prescriptions.isEmpty() ? 1 : 2));
         charge.setTotalAmount(totalAmount);
         charge.setActualAmount(totalAmount);
         charge.setStatus(ChargeStatusEnum.UNPAID.getCode());
@@ -111,7 +110,6 @@ public class ChargeServiceImpl implements ChargeService {
         
         Charge savedCharge = chargeRepository.save(charge);
 
-        // 5. 保存明细
         for (ChargeDetail d : details) {
             d.setCharge(savedCharge);
         }
@@ -136,7 +134,6 @@ public class ChargeServiceImpl implements ChargeService {
     public ChargeVO processPayment(Long id, PaymentDTO dto) {
         log.info("开始处理支付，收费单ID: {}, 支付金额: {}", id, dto.getPaidAmount());
 
-        // 1. 幂等性校验
         if (dto.getTransactionNo() != null && !dto.getTransactionNo().isEmpty()) {
             var existingCharge = chargeRepository.findByTransactionNo(dto.getTransactionNo());
             if (existingCharge.isPresent()) {
@@ -150,21 +147,17 @@ public class ChargeServiceImpl implements ChargeService {
             }
         }
 
-        // 2. 查询收费单
         Charge charge = chargeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("收费单不存在，ID: " + id));
 
-        // 3. 状态校验
         if (!ChargeStatusEnum.UNPAID.getCode().equals(charge.getStatus())) {
             throw new IllegalArgumentException("收费单状态不正确，当前状态: " + charge.getStatus());
         }
 
-        // 4. 金额校验
         if (charge.getActualAmount().subtract(dto.getPaidAmount()).abs().compareTo(new BigDecimal("0.01")) > 0) {
             throw new IllegalArgumentException("支付金额不匹配，应付: " + charge.getActualAmount() + ", 实付: " + dto.getPaidAmount());
         }
 
-        // 5. 更新收费单状态
         charge.setStatus(ChargeStatusEnum.PAID.getCode());
         charge.setPaymentMethod(dto.getPaymentMethod());
         charge.setTransactionNo(dto.getTransactionNo());
@@ -172,7 +165,6 @@ public class ChargeServiceImpl implements ChargeService {
         
         Charge savedCharge = chargeRepository.save(charge);
 
-        // 6. 更新处方状态
         if (charge.getDetails() != null) {
             for (ChargeDetail detail : charge.getDetails()) {
                 if ("PRESCRIPTION".equals(detail.getItemType())) {
@@ -204,7 +196,6 @@ public class ChargeServiceImpl implements ChargeService {
             throw new IllegalStateException("只有已缴费状态的收费单才能退费");
         }
 
-        // 1. 更新收费单状态
         charge.setStatus(ChargeStatusEnum.REFUNDED.getCode());
         charge.setRefundReason(refundReason);
         charge.setRefundTime(LocalDateTime.now());
@@ -212,7 +203,6 @@ public class ChargeServiceImpl implements ChargeService {
         
         Charge savedCharge = chargeRepository.save(charge);
 
-        // 2. 更新关联处方状态并决定是否恢复库存
         if (charge.getDetails() != null) {
             for (ChargeDetail detail : charge.getDetails()) {
                 if ("PRESCRIPTION".equals(detail.getItemType())) {
@@ -220,17 +210,13 @@ public class ChargeServiceImpl implements ChargeService {
                             .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + detail.getItemId()));
                     
                     if (PrescriptionStatusEnum.PAID.getCode().equals(prescription.getStatus())) {
-                        // 场景 A: 已缴费未发药 -> 回退到已审核
                         prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode());
                         prescription.setUpdatedAt(LocalDateTime.now());
                         prescriptionRepository.save(prescription);
                     } else if (PrescriptionStatusEnum.DISPENSED.getCode().equals(prescription.getStatus())) {
-                        // 场景 B: 已缴费已发药 -> 状态变为已退费并恢复库存
                         prescription.setStatus(PrescriptionStatusEnum.REFUNDED.getCode());
                         prescription.setUpdatedAt(LocalDateTime.now());
                         prescriptionRepository.save(prescription);
-                        
-                        // 恢复库存逻辑 (调用 PrescriptionService)
                         prescriptionService.restoreInventoryOnly(prescription.getMainId());
                     }
                 }
@@ -268,6 +254,64 @@ public class ChargeServiceImpl implements ChargeService {
         };
 
         return chargeRepository.findAll(spec, pageable).map(this::mapToVO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DailySettlementVO getDailySettlement(LocalDate date) {
+        log.info("生成每日结算报表，日期: {}", date);
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(23, 59, 59);
+
+        List<Charge> charges = chargeRepository.findByChargeTimeRange(start, end);
+        
+        long totalCharges = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalRefundAmount = BigDecimal.ZERO;
+        long totalRefundCount = 0;
+        
+        Map<String, DailySettlementVO.PaymentBreakdownVO> breakdown = new HashMap<>();
+        for (com.his.enums.PaymentMethodEnum method : com.his.enums.PaymentMethodEnum.values()) {
+            DailySettlementVO.PaymentBreakdownVO b = new DailySettlementVO.PaymentBreakdownVO();
+            b.setCount(0L);
+            b.setAmount(BigDecimal.ZERO);
+            breakdown.put(method.name(), b);
+        }
+
+        for (Charge c : charges) {
+            if (ChargeStatusEnum.PAID.getCode().equals(c.getStatus()) || ChargeStatusEnum.REFUNDED.getCode().equals(c.getStatus())) {
+                totalCharges++;
+                totalAmount = totalAmount.add(c.getActualAmount());
+                
+                if (c.getPaymentMethod() != null) {
+                    String methodName = com.his.enums.PaymentMethodEnum.fromCode(c.getPaymentMethod()).name();
+                    DailySettlementVO.PaymentBreakdownVO b = breakdown.get(methodName);
+                    b.setCount(b.getCount() + 1);
+                    b.setAmount(b.getAmount().add(c.getActualAmount()));
+                }
+            }
+            
+            if (ChargeStatusEnum.REFUNDED.getCode().equals(c.getStatus())) {
+                totalRefundCount++;
+                totalRefundAmount = totalRefundAmount.add(c.getRefundAmount() != null ? c.getRefundAmount() : BigDecimal.ZERO);
+            }
+        }
+
+        DailySettlementVO vo = new DailySettlementVO();
+        vo.setDate(date);
+        vo.setCashierName("当前收费员"); 
+        vo.setTotalCharges(totalCharges);
+        vo.setTotalAmount(totalAmount);
+        vo.setPaymentBreakdown(breakdown);
+        
+        DailySettlementVO.RefundStatsVO rStats = new DailySettlementVO.RefundStatsVO();
+        rStats.setCount(totalRefundCount);
+        rStats.setAmount(totalRefundAmount);
+        vo.setRefunds(rStats);
+        
+        vo.setNetCollection(totalAmount.subtract(totalRefundAmount));
+
+        return vo;
     }
 
     private String generateChargeNo() {
