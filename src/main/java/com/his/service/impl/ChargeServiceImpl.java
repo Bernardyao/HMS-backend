@@ -127,9 +127,74 @@ public class ChargeServiceImpl implements ChargeService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ChargeVO processPayment(Long id, PaymentDTO dto) {
-        // TODO: 实现支付逻辑
-        return null;
+        log.info("开始处理支付，收费单ID: {}, 支付金额: {}", id, dto.getPaidAmount());
+
+        // 1. 幂等性校验：如果交易流水号已存在
+        if (dto.getTransactionNo() != null && !dto.getTransactionNo().isEmpty()) {
+            var existingCharge = chargeRepository.findByTransactionNo(dto.getTransactionNo());
+            if (existingCharge.isPresent()) {
+                Charge charge = existingCharge.get();
+                // 如果已支付且金额一致，直接返回成功（幂等）
+                if (ChargeStatusEnum.PAID.getCode().equals(charge.getStatus())) {
+                    log.info("检测到重复支付请求（幂等），交易流水号: {}", dto.getTransactionNo());
+                    return mapToVO(charge);
+                } else {
+                    throw new IllegalArgumentException("交易流水号已存在但状态不一致，流水号: " + dto.getTransactionNo());
+                }
+            }
+        }
+
+        // 2. 查询收费单
+        Charge charge = chargeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("收费单不存在，ID: " + id));
+
+        // 3. 状态校验
+        if (!ChargeStatusEnum.UNPAID.getCode().equals(charge.getStatus())) {
+            throw new IllegalArgumentException("收费单状态不正确，当前状态: " + charge.getStatus());
+        }
+
+        // 4. 金额校验 (误差允许 0.01)
+        if (charge.getActualAmount().subtract(dto.getPaidAmount()).abs().compareTo(new BigDecimal("0.01")) > 0) {
+            throw new IllegalArgumentException("支付金额不匹配，应付: " + charge.getActualAmount() + ", 实付: " + dto.getPaidAmount());
+        }
+
+        // 5. 模拟调用第三方支付 (Mock)
+        // 在这里可以添加日志模拟调用过程
+        log.info("正在调用第三方支付接口验证... 支付方式: {}, 流水号: {}", dto.getPaymentMethod(), dto.getTransactionNo());
+        // Mock: 默认成功
+
+        // 6. 更新收费单状态
+        charge.setStatus(ChargeStatusEnum.PAID.getCode());
+        charge.setPaymentMethod(dto.getPaymentMethod());
+        charge.setTransactionNo(dto.getTransactionNo());
+        charge.setChargeTime(LocalDateTime.now());
+        charge.setUpdatedBy(null); // TODO: 获取当前登录用户ID
+        
+        Charge savedCharge = chargeRepository.save(charge);
+
+        // 7. 更新关联处方状态为已缴费
+        if (charge.getDetails() != null) {
+            for (ChargeDetail detail : charge.getDetails()) {
+                if ("PRESCRIPTION".equals(detail.getItemType())) {
+                    Prescription prescription = prescriptionRepository.findById(detail.getItemId())
+                            .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + detail.getItemId()));
+                    
+                    // 只有 REVIEWED 状态才能更新为 PAID
+                    // 或者这里可以更宽容一点，防止并发问题？暂时严格处理
+                    if (PrescriptionStatusEnum.REVIEWED.getCode().equals(prescription.getStatus())) {
+                         prescription.setStatus(PrescriptionStatusEnum.PAID.getCode());
+                         prescription.setUpdatedAt(LocalDateTime.now());
+                         prescriptionRepository.save(prescription);
+                         log.info("处方状态已更新为已缴费，处方ID: {}", prescription.getMainId());
+                    }
+                }
+            }
+        }
+
+        log.info("支付成功，收费单ID: {}", id);
+        return mapToVO(savedCharge);
     }
 
     @Override
