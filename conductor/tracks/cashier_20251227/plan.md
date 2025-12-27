@@ -46,7 +46,7 @@ Focus: Implementing refund handling and financial reporting.
     - **Test:** Unit tests for statistics calculation.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Advanced Logic' (Protocol in workflow.md) (bf7274f)
 
-## Phase 4: API Layer & Security
+## Phase 4: API Layer & Security [checkpoint: 0696943]
 Focus: Exposing functionality via REST endpoints and securing them.
 
 - [x] Task: Implement `ChargeController` (93affdd)
@@ -56,7 +56,7 @@ Focus: Exposing functionality via REST endpoints and securing them.
 - [x] Task: Apply Role-Based Access Control (93affdd)
     - Secure endpoints (CASHIER/ADMIN).
     - **Test:** Security integration tests (Access Control).
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: API Layer & Security' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: API Layer & Security' (Protocol in workflow.md) (0696943)
 
 ## Phase 5: Verification & Documentation
 Focus: Ensuring quality and completeness.
