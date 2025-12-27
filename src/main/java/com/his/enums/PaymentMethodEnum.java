@@ -16,9 +16,19 @@ public enum PaymentMethodEnum {
     CARD((short) 2, "银行卡"),
     
     /**
-     * 移动支付
+     * 微信
      */
-    MOBILE((short) 3, "移动支付");
+    WECHAT((short) 3, "微信"),
+
+    /**
+     * 支付宝
+     */
+    ALIPAY((short) 4, "支付宝"),
+
+    /**
+     * 医保
+     */
+    INSURANCE((short) 5, "医保");
 
     private final Short code;
     private final String description;

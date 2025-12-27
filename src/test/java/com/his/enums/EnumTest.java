@@ -23,8 +23,10 @@ class EnumTest {
 
     @Test
     void testPaymentMethodEnum() {
-        assertEquals("移动支付", PaymentMethodEnum.MOBILE.getDescription());
-        assertEquals((short) 3, PaymentMethodEnum.MOBILE.getCode());
-        assertEquals(PaymentMethodEnum.MOBILE, PaymentMethodEnum.fromCode((short) 3));
+        assertEquals("微信", PaymentMethodEnum.WECHAT.getDescription());
+        assertEquals((short) 3, PaymentMethodEnum.WECHAT.getCode());
+        assertEquals(PaymentMethodEnum.WECHAT, PaymentMethodEnum.fromCode((short) 3));
+        assertEquals(PaymentMethodEnum.ALIPAY, PaymentMethodEnum.fromCode((short) 4));
+        assertEquals(PaymentMethodEnum.INSURANCE, PaymentMethodEnum.fromCode((short) 5));
     }
 }
