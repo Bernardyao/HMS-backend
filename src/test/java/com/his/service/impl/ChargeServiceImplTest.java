@@ -88,4 +88,88 @@ class ChargeServiceImplTest {
         
         verify(chargeRepository).save(any());
     }
+
+    @Test
+    @DisplayName("测试支付：成功场景")
+    void processPayment_Success() {
+        // Given
+        Long chargeId = 1000L;
+        String transactionNo = "WX202312271001";
+        
+        com.his.entity.Charge charge = new com.his.entity.Charge();
+        charge.setMainId(chargeId);
+        charge.setStatus(com.his.enums.ChargeStatusEnum.UNPAID.getCode());
+        charge.setTotalAmount(new BigDecimal("100.00"));
+        charge.setActualAmount(new BigDecimal("100.00")); // Fix: Set actualAmount
+        charge.setIsDeleted((short) 0);
+        
+        Patient patient = new Patient();
+        patient.setMainId(100L);
+        patient.setName("张三");
+        charge.setPatient(patient);
+
+        com.his.dto.PaymentDTO paymentDTO = new com.his.dto.PaymentDTO();
+        paymentDTO.setPaymentMethod(com.his.enums.PaymentMethodEnum.WECHAT.getCode());
+        paymentDTO.setTransactionNo(transactionNo);
+        paymentDTO.setPaidAmount(new BigDecimal("100.00"));
+
+        when(chargeRepository.findById(chargeId)).thenReturn(Optional.of(charge));
+        // Removed unnecessary existsByChargeNo stub
+        
+        // Mock prescription update
+        com.his.entity.ChargeDetail detail = new com.his.entity.ChargeDetail();
+        detail.setItemType("PRESCRIPTION");
+        detail.setItemId(10L);
+        charge.setDetails(Arrays.asList(detail));
+        
+        Prescription prescription = new Prescription();
+        prescription.setMainId(10L);
+        prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode()); // Add initial status
+        when(prescriptionRepository.findById(10L)).thenReturn(Optional.of(prescription));
+        
+        when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0)); // Mock save
+
+        // When
+        ChargeVO result = chargeService.processPayment(chargeId, paymentDTO);
+
+        // Then
+        assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.PAID.getCode());
+        verify(prescriptionRepository).save(argThat(p -> p.getStatus().equals(PrescriptionStatusEnum.PAID.getCode())));
+    }
+
+    @Test
+    @DisplayName("测试支付：幂等性")
+    void processPayment_Idempotent() {
+        Long chargeId = 1000L;
+        String transactionNo = "WX202312271001";
+        
+        com.his.entity.Charge charge = new com.his.entity.Charge();
+        charge.setMainId(chargeId);
+        charge.setStatus(com.his.enums.ChargeStatusEnum.PAID.getCode()); // Already PAID
+        charge.setTransactionNo(transactionNo);
+        charge.setTotalAmount(new BigDecimal("100.00"));
+        charge.setActualAmount(new BigDecimal("100.00"));
+        charge.setIsDeleted((short) 0);
+        
+        Patient patient = new Patient();
+        patient.setMainId(100L);
+        patient.setName("张三");
+        charge.setPatient(patient);
+
+        com.his.dto.PaymentDTO paymentDTO = new com.his.dto.PaymentDTO();
+        paymentDTO.setPaymentMethod(com.his.enums.PaymentMethodEnum.WECHAT.getCode());
+        paymentDTO.setTransactionNo(transactionNo);
+        paymentDTO.setPaidAmount(new BigDecimal("100.00"));
+
+        // When we try to pay an already paid charge with the same transaction no
+        when(chargeRepository.findByTransactionNo(transactionNo)).thenReturn(Optional.of(charge));
+
+        // When
+        ChargeVO result = chargeService.processPayment(chargeId, paymentDTO);
+
+        // Then
+        assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.PAID.getCode());
+        // Verify no actual save logic was triggered again
+        verify(prescriptionRepository, never()).save(any());
+    }
 }

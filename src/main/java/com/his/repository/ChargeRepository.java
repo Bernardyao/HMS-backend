@@ -82,6 +82,11 @@ public interface ChargeRepository extends JpaRepository<Charge, Long>, JpaSpecif
     Optional<Charge> findByInvoiceNoAndIsDeleted(String invoiceNo, Short isDeleted);
 
     /**
+     * 根据交易流水号查询（用于幂等性检查）
+     */
+    Optional<Charge> findByTransactionNo(String transactionNo);
+
+    /**
      * 统计患者消费总额
      */
     @Query("SELECT COALESCE(SUM(c.actualAmount), 0) FROM Charge c WHERE c.patient.mainId = :patientId AND c.status = 1 AND c.isDeleted = 0")
