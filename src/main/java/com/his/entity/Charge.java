@@ -7,6 +7,7 @@ import lombok.ToString;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 缴费记录表
@@ -167,6 +168,14 @@ public class Charge {
      */
     @Column(name = "updated_by")
     private Long updatedBy;
+
+    /**
+     * 收费明细列表
+     */
+    @OneToMany(mappedBy = "charge", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<ChargeDetail> details;
 
     @PrePersist
     protected void onCreate() {
