@@ -49,11 +49,11 @@ Focus: Implementing refund handling and financial reporting.
 ## Phase 4: API Layer & Security
 Focus: Exposing functionality via REST endpoints and securing them.
 
-- [ ] Task: Implement `ChargeController`
+- [x] Task: Implement `ChargeController` (93affdd)
     - Create REST endpoints.
     - Add Swagger annotations.
     - **Test:** Controller slice tests (MockMVC).
-- [ ] Task: Apply Role-Based Access Control
+- [x] Task: Apply Role-Based Access Control (93affdd)
     - Secure endpoints (CASHIER/ADMIN).
     - **Test:** Security integration tests (Access Control).
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: API Layer & Security' (Protocol in workflow.md)
