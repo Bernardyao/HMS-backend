@@ -114,7 +114,7 @@ class PharmacistPrescriptionControllerTest {
         prescription.setMedicalRecord(record);
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
-        prescription.setStatus((short) 2); // Approved
+        prescription.setStatus((short) 5); // PAID (已缴费) - 收费模块要求必须先缴费才能发药
         prescription.setTotalAmount(new BigDecimal("20.00"));
         prescription.setItemCount(2);
         prescription = prescriptionRepository.save(prescription);
@@ -156,7 +156,7 @@ class PharmacistPrescriptionControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].status").value(2));
+                .andExpect(jsonPath("$.data[0].status").value(5)); // PAID (已缴费)
     }
 
     @Test
@@ -177,21 +177,19 @@ class PharmacistPrescriptionControllerTest {
     }
 
     @Test
-    @DisplayName("测试未审核处方发药（失败）")
+    @DisplayName("测试未缴费处方发药（失败）")
     void testDispense_NotApproved_Fail() throws Exception {
-        // Change status to draft
+        // Change status to REVIEWED (已审核但未缴费)
         Prescription prescription = prescriptionRepository.findById(testPrescriptionId).orElseThrow();
-        prescription.setStatus((short) 0);
+        prescription.setStatus((short) 2); // REVIEWED
         prescriptionRepository.save(prescription);
 
         mockMvc.perform(post("/api/pharmacist/prescriptions/{id}/dispense", testPrescriptionId)
                         .with(authentication(setupPharmacistAuthentication()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isOk()) // Our Result.error still returns 200 HTTP status sometimes? 
-                                          // Looking at common Result it might depend on configuration.
-                                          // Result.error() usually returns 500 or custom code in JSON.
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value(containsString("审核")));
+                .andExpect(jsonPath("$.message").value(containsString("已缴费")));
     }
 }

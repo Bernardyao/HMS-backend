@@ -122,13 +122,14 @@ class PharmacistWorkstationIntegrationTest {
         medicine = medicineRepository.save(medicine);
         testMedicineId = medicine.getMainId();
 
-        // 3. 准备已审核的处方（包含2盒感冒灵）
+        // 3. 准备已缴费的处方（包含2盒感冒灵）
+        // 注意：收费模块要求处方必须先缴费（状态=PAID=5）才能发药
         Prescription prescription = new Prescription();
         prescription.setPrescriptionNo("PRE001");
         prescription.setMedicalRecord(record);
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
-        prescription.setStatus((short) 2); // Approved (已审核)
+        prescription.setStatus((short) 5); // PAID (已缴费) - 收费模块要求必须先缴费才能发药
         prescription.setTotalAmount(new BigDecimal("20.00"));
         prescription.setItemCount(2);
         prescription.setPrescriptionType((short) 1);

@@ -27,7 +27,7 @@ The system serves multiple distinct user roles within the hospital ecosystem:
 *   **Patient Registration & Triage:** Streamlined entry of patient demographics and intelligent assignment to department queues.
 *   **Doctor Workstation:** Integrated view for managing patient queues, writing electronic medical records, and issuing prescriptions.
 *   **Pharmacy Management:** Prescription validation, inventory tracking, and dispensing workflows linked to payment status.
-*   **Financial Management:** Secure payment processing for all hospital services.
+*   **Financial Management:** Secure payment processing for all hospital services, including automated charge slip generation and refund-triggered inventory restoration.
 *   **Role-Based Security:** Granular access control using Spring Security and JWT to protect sensitive medical and financial data.
 
 ## 4. Success Metrics

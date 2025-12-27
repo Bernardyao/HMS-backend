@@ -36,11 +36,6 @@ bin/
 
 # Docs: ignore all, but allow specific files and API folder
 docs/*
-!docs/
-!/docs/开发路线图.md
-!docs/DEPLOY_UBUNTU.md
-!docs/API/
-!docs/API/**
 
 # Local tools / assistants
 .copilot/
@@ -52,3 +47,4 @@ docs/*
 logs/
 GEMINI.md
 .github/*
+.claude
