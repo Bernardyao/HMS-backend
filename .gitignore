@@ -39,12 +39,19 @@ docs/*
 
 # Local tools / assistants
 .copilot/
+.claude/
 
 # Env / local config
 .env
+.env.local
+.env.*.local
 
 # Misc
 logs/
 GEMINI.md
 .github/*
-.claude
+
+# Backup files
+*.bak
+*.backup
+*.orig

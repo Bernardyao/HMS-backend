@@ -1,7 +1,6 @@
 package com.his.service.impl;
 
 import com.his.dto.CreateChargeDTO;
-import com.his.dto.PaymentDTO;
 import com.his.entity.Patient;
 import com.his.entity.Prescription;
 import com.his.entity.Registration;
