@@ -38,7 +38,7 @@ Focus: Implementing the service layer for creating charges and processing paymen
 ## Phase 3: Advanced Logic - Refunds & Reports
 Focus: Implementing refund handling and financial reporting.
 
-- [ ] Task: Implement `ChargeService.processRefund()`
+- [x] Task: Implement `ChargeService.processRefund()` (0f8ae78)
     - Implement refund logic and inventory restoration integration.
     - **Test:** Integration tests for Refund flow (with and without inventory restore).
 - [ ] Task: Implement Daily Settlement Report
