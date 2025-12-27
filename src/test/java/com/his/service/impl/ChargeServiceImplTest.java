@@ -252,4 +252,36 @@ class ChargeServiceImplTest {
         verify(prescriptionRepository).save(argThat(p -> p.getStatus().equals(PrescriptionStatusEnum.REFUNDED.getCode())));
         verify(prescriptionService).restoreInventoryOnly(10L);
     }
+
+    @Test
+    @DisplayName("测试每日结算：成功场景")
+    void getDailySettlement_Success() {
+        // Given
+        java.time.LocalDate date = java.time.LocalDate.now();
+
+        com.his.entity.Charge c1 = new com.his.entity.Charge();
+        c1.setStatus(com.his.enums.ChargeStatusEnum.PAID.getCode());
+        c1.setPaymentMethod(com.his.enums.PaymentMethodEnum.WECHAT.getCode());
+        c1.setActualAmount(new BigDecimal("100.00"));
+
+        com.his.entity.Charge c2 = new com.his.entity.Charge();
+        c2.setStatus(com.his.enums.ChargeStatusEnum.REFUNDED.getCode());
+        c2.setPaymentMethod(com.his.enums.PaymentMethodEnum.ALIPAY.getCode());
+        c2.setActualAmount(new BigDecimal("50.00"));
+        c2.setRefundAmount(new BigDecimal("50.00"));
+
+        when(chargeRepository.findByChargeTimeRange(any(), any())).thenReturn(java.util.Arrays.asList(c1, c2));
+
+        // When
+        com.his.vo.DailySettlementVO result = chargeService.getDailySettlement(date);
+
+        // Then
+        assertThat(result.getTotalCharges()).isEqualTo(2);
+        assertThat(result.getTotalAmount()).isEqualByComparingTo("150.00");
+        assertThat(result.getRefunds().getAmount()).isEqualByComparingTo("50.00");
+        assertThat(result.getNetCollection()).isEqualByComparingTo("100.00");
+        
+        assertThat(result.getPaymentBreakdown().get("WECHAT").getAmount()).isEqualByComparingTo("100.00");
+        assertThat(result.getPaymentBreakdown().get("ALIPAY").getAmount()).isEqualByComparingTo("50.00");
+    }
 }

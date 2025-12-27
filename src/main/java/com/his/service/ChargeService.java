@@ -64,4 +64,12 @@ public interface ChargeService {
      * 查询收费单列表（支持分页和条件查询）
      */
     Page<ChargeVO> queryCharges(String chargeNo, Long patientId, Integer status, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    /**
+     * 获取每日结算报表
+     *
+     * @param date 目标日期
+     * @return 结算报表
+     */
+    com.his.vo.DailySettlementVO getDailySettlement(LocalDate date);
 }
