@@ -5,7 +5,7 @@ This plan outlines the implementation of the core charging and billing functiona
 ## Phase 1: Foundation - Data Model & Enums
 Focus: Establishing the database schema and state definitions required for charging.
 
-- [ ] Task: Create Database Migration Scripts
+- [x] Task: Create Database Migration Scripts (901cda7)
     - Write SQL scripts to create `his_charge` and `his_charge_detail` tables.
     - Write SQL scripts to update `his_prescription` status comments/constraints (if applicable).
 - [ ] Task: Update `Prescription` status flow and create Enums
