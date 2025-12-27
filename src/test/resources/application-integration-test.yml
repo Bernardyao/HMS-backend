@@ -1,0 +1,40 @@
+# ============================================================
+# Integration Test Environment Configuration
+# ============================================================
+# 集成测试使用真实PostgreSQL数据库，确保与生产环境一致
+
+server:
+  port: 8081
+
+spring:
+  # 数据源配置 - 集成测试（连接真实PostgreSQL数据库）
+  datasource:
+    url: jdbc:postgresql://localhost:5432/his_project_test
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 5
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  # JPA/Hibernate 配置
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop  # 每次测试自动创建和删除表
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.his: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.test: DEBUG
