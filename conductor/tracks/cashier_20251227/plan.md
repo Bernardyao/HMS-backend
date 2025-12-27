@@ -35,7 +35,7 @@ Focus: Implementing the service layer for creating charges and processing paymen
     - **Test:** Unit/Integration tests for Payment flow and Idempotency.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Core Business Logic' (Protocol in workflow.md) (4e5c4b3)
 
-## Phase 3: Advanced Logic - Refunds & Reports
+## Phase 3: Advanced Logic - Refunds & Reports [checkpoint: bf7274f]
 Focus: Implementing refund handling and financial reporting.
 
 - [x] Task: Implement `ChargeService.processRefund()` (0f8ae78)
@@ -44,7 +44,7 @@ Focus: Implementing refund handling and financial reporting.
 - [x] Task: Implement Daily Settlement Report (207eacb)
     - Implement statistics aggregation logic.
     - **Test:** Unit tests for statistics calculation.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Advanced Logic' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Advanced Logic' (Protocol in workflow.md) (bf7274f)
 
 ## Phase 4: API Layer & Security
 Focus: Exposing functionality via REST endpoints and securing them.
