@@ -1,6 +1,10 @@
 package com.his.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.his.common.SensitiveData;
+import com.his.common.SensitiveType;
+import com.his.config.SensitiveDataSerializer;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -91,12 +95,16 @@ public class Doctor {
     /**
      * 联系电话
      */
+    @SensitiveData(type = SensitiveType.PHONE)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "phone", length = 20)
     private String phone;
 
     /**
      * 电子邮箱
      */
+    @SensitiveData(type = SensitiveType.EMAIL)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "email", length = 100)
     private String email;
 
