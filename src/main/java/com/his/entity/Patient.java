@@ -1,6 +1,10 @@
 package com.his.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.his.common.SensitiveData;
+import com.his.common.SensitiveType;
+import com.his.config.SensitiveDataSerializer;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -77,36 +81,48 @@ public class Patient {
     /**
      * 联系电话
      */
+    @SensitiveData(type = SensitiveType.PHONE)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "phone", length = 20)
     private String phone;
 
     /**
      * 身份证号
      */
+    @SensitiveData(type = SensitiveType.ID_CARD)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "id_card", length = 18)
     private String idCard;
 
     /**
      * 医保卡号
      */
+    @SensitiveData(type = SensitiveType.BANK_CARD)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "medical_card_no", length = 50)
     private String medicalCardNo;
 
     /**
      * 联系地址
      */
+    @SensitiveData(type = SensitiveType.ADDRESS)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "address", length = 500)
     private String address;
 
     /**
      * 紧急联系人
      */
+    @SensitiveData(type = SensitiveType.NAME)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "emergency_contact", length = 50)
     private String emergencyContact;
 
     /**
      * 紧急联系电话
      */
+    @SensitiveData(type = SensitiveType.PHONE)
+    @JsonSerialize(using = SensitiveDataSerializer.class)
     @Column(name = "emergency_phone", length = 20)
     private String emergencyPhone;
 

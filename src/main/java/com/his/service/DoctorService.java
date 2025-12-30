@@ -1,5 +1,6 @@
 package com.his.service;
 
+import com.his.entity.Doctor;
 import com.his.enums.RegStatusEnum;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
@@ -61,5 +62,32 @@ public interface DoctorService {
      * @throws IllegalArgumentException 当患者不存在或已被删除时
      */
     PatientDetailVO getPatientDetail(Long patientId);
+
+    /**
+     * 【新增】验证医生存在并返回医生信息（用于防止IDOR攻击）
+     *
+     * <p><b>安全用途：</b></p>
+     * <ul>
+     *   <li>验证医生ID是否有效（医生是否存在且未被删除）</li>
+     *   <li>用于Controller层的安全验证，防止水平越权攻击</li>
+     *   <li>从Controller移到Service层，遵守分层架构原则</li>
+     * </ul>
+     *
+     * <p><b>使用场景：</b></p>
+     * <pre>
+     * // 管理员模式：验证指定的医生是否存在
+     * Doctor doctor = doctorService.getAndValidateDoctor(adminDoctorId);
+     * Long deptId = doctor.getDepartment().getMainId();
+     *
+     * // 普通医生模式：验证Token中的医生ID是否有效
+     * Doctor doctor = doctorService.getAndValidateDoctor(doctorId);
+     * Long deptId = doctor.getDepartment().getMainId();
+     * </pre>
+     *
+     * @param doctorId 医生ID
+     * @return 医生实体（包含科室信息）
+     * @throws IllegalArgumentException 如果医生不存在或已被删除
+     */
+    Doctor getAndValidateDoctor(Long doctorId);
 }
 

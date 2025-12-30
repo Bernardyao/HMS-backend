@@ -2,11 +2,13 @@ package com.his.service.impl;
 
 import com.his.converter.VoConverter;
 import com.his.entity.Department;
+import com.his.entity.Doctor;
 import com.his.entity.Patient;
 import com.his.entity.Registration;
 import com.his.enums.GenderEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.DepartmentRepository;
+import com.his.repository.DoctorRepository;
 import com.his.repository.PatientRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.DoctorService;
@@ -33,6 +35,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final RegistrationRepository registrationRepository;
     private final DepartmentRepository departmentRepository;
     private final PatientRepository patientRepository;
+    private final DoctorRepository doctorRepository;
 
     /**
      * 获取今日候诊列表（支持个人/科室混合视图）
@@ -403,5 +406,69 @@ public class DoctorServiceImpl implements DoctorService {
             return phone;
         }
         return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
+
+    /**
+     * 【新增】验证医生存在并返回医生信息（用于防止IDOR攻击）
+     *
+     * <p><b>安全验证：</b></p>
+     * <ul>
+     *   <li>验证医生ID是否有效</li>
+     *   <li>验证医生是否存在且未被删除</li>
+     *   <li>返回医生实体（包含科室信息）供Controller使用</li>
+     * </ul>
+     *
+     * <p><b>分层架构：</b></p>
+     * <ul>
+     *   <li>此方法将DoctorController中的验证逻辑移到Service层</li>
+     *   <li>遵守分层架构原则：Controller不直接依赖Repository</li>
+     *   <li>保持安全验证的完整性</li>
+     * </ul>
+     *
+     * @param doctorId 医生ID
+     * @return 医生实体（包含科室信息）
+     * @throws IllegalArgumentException 如果医生不存在或已被删除
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Doctor getAndValidateDoctor(Long doctorId) {
+        log.debug("验证医生信息，医生ID: {}", doctorId);
+
+        // 防御性编程: 参数验证
+        if (doctorId == null || doctorId <= 0) {
+            log.error("验证医生失败: 医生ID无效 - {}", doctorId);
+            throw new IllegalArgumentException("医生ID必须大于0，当前值: " + doctorId);
+        }
+
+        // 查询医生记录
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> {
+                    log.warn("验证医生失败: 医生不存在，ID: {}", doctorId);
+                    return new IllegalArgumentException("指定的医生不存在，ID: " + doctorId);
+                });
+
+        // 检查是否被删除
+        if (doctor.getIsDeleted() != null && doctor.getIsDeleted() == 1) {
+            log.warn("验证医生失败: 医生已被删除，ID: {}, 姓名: {}", doctorId, doctor.getName());
+            throw new IllegalArgumentException("该医生已被删除，无法操作");
+        }
+
+        // 验证科室信息是否存在
+        if (doctor.getDepartment() == null) {
+            log.error("验证医生失败: 医生科室信息为空，医生ID: {}", doctorId);
+            throw new IllegalArgumentException("医生科室信息不完整，无法操作");
+        }
+
+        // 检查科室是否被删除
+        if (doctor.getDepartment().getIsDeleted() != null && doctor.getDepartment().getIsDeleted() == 1) {
+            log.warn("验证医生失败: 医生所属科室已被删除，医生ID: {}, 科室ID: {}",
+                    doctorId, doctor.getDepartment().getMainId());
+            throw new IllegalArgumentException("医生所属科室已被删除，无法操作");
+        }
+
+        log.debug("医生验证通过，医生ID: {}, 姓名: {}, 科室: {}",
+                doctorId, doctor.getName(), doctor.getDepartment().getName());
+
+        return doctor;
     }
 }

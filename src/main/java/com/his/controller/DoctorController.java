@@ -4,7 +4,6 @@ import com.his.common.Result;
 import com.his.common.SecurityUtils;
 import com.his.entity.Doctor;
 import com.his.enums.RegStatusEnum;
-import com.his.repository.DoctorRepository;
 import com.his.service.DoctorService;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
@@ -20,16 +19,16 @@ import java.util.List;
 
 /**
  * 医生工作站控制器
- * 
+ *
  * <p><b>安全设计：防止水平越权（IDOR）攻击</b>
- * 
+ *
  * <p>本控制器的所有接口默认使用 {@link SecurityUtils} 从 JWT Token 中获取当前医生的身份信息，
  * 而<b>不信任</b>前端传递的任何用户标识参数（如 doctorId）。这样可以防止攻击者通过修改请求参数
  * 来访问其他医生的数据。
- * 
+ *
  * <p><b>管理员特权：</b>
  * <p>如果当前用户是管理员（ADMIN），则允许通过参数指定要查看的医生数据，并拥有操作所有数据的权限。
- * 
+ *
  * @author HIS 开发团队
  * @see SecurityUtils
  * @see com.his.common.JwtUtils
@@ -43,7 +42,6 @@ import java.util.List;
 public class DoctorController {
 
     private final DoctorService doctorService;
-    private final DoctorRepository doctorRepository;
 
     /**
      * 查询今日候诊列表（支持个人/科室视图）
@@ -95,40 +93,39 @@ public class DoctorController {
                     return Result.badRequest("管理员模式下，请指定要查看的医生ID (参数: adminDoctorId)");
                 }
                 doctorId = adminDoctorId;
-                
-                // 获取指定医生的科室信息
-                Doctor doctor = doctorRepository.findById(doctorId)
-                        .orElseThrow(() -> new IllegalArgumentException("指定的医生不存在，ID: " + doctorId));
+
+                // 获取指定医生的科室信息（使用Service层方法，遵守分层架构）
+                Doctor doctor = doctorService.getAndValidateDoctor(doctorId);
                 deptId = doctor.getDepartment().getMainId();
-                
+
                 log.info("【管理员】查看医生[{}]的候诊列表，科室ID: {}", doctorId, deptId);
             } else {
                 // 医生模式 - 安全获取ID
                 doctorId = SecurityUtils.getCurrentDoctorId();
-                
-                Doctor doctor = doctorRepository.findById(doctorId)
-                        .orElseThrow(() -> new IllegalArgumentException("医生信息不存在，ID: " + doctorId));
+
+                // 验证医生信息（使用Service层方法，遵守分层架构）
+                Doctor doctor = doctorService.getAndValidateDoctor(doctorId);
                 deptId = doctor.getDepartment().getMainId();
-                
-                log.info("【安全】查询候诊列表 - 医生ID: {} (从Token获取), 科室ID: {}, 科室视图: {}", 
+
+                log.info("【安全】查询候诊列表 - 医生ID: {} (从Token获取), 科室ID: {}, 科室视图: {}",
                         doctorId, deptId, showAll);
             }
-            
+
             // 调用服务层查询候诊列表
             List<RegistrationVO> waitingList = doctorService.getWaitingList(doctorId, deptId, showAll);
-            
+
             // 返回带有业务说明的响应
             if (waitingList.isEmpty()) {
                 String viewMode = showAll ? "科室" : "个人";
                 log.info("{} [医生ID: {}, 科室ID: {}] 今日暂无候诊患者", viewMode, doctorId, deptId);
                 return Result.success("今日暂无候诊患者", waitingList);
             }
-            
+
             String viewMode = showAll ? "科室视图" : "个人视图";
-            log.info("{} [医生ID: {}, 科室ID: {}] 查询到 {} 位候诊患者", 
+            log.info("{} [医生ID: {}, 科室ID: {}] 查询到 {} 位候诊患者",
                     viewMode, doctorId, deptId, waitingList.size());
             return Result.success(
-                    String.format("查询成功（%s），共%d位候诊患者", viewMode, waitingList.size()), 
+                    String.format("查询成功（%s），共%d位候诊患者", viewMode, waitingList.size()),
                     waitingList
             );
         } catch (IllegalStateException e) {
