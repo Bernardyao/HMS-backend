@@ -93,12 +93,17 @@ class GeneralArchitectureTest {
     }
 
     @Test
-    @DisplayName("规则6: 业务枚举类应该在 enums 包中")
-    void enumsShouldResideInEnumsPackage() {
+    @DisplayName("规则6: 业务枚举类应该在合适的包中")
+    void enumsShouldResideInAllowedPackages() {
         ArchRule rule = classes()
                 .that().areEnums()
                 .and().resideInAPackage("com.his..")
-                .should().resideInAnyPackage("..enums..", "..common..", "..exception..")
+                .should().resideInAnyPackage(
+                        "..enums..",      // 枚举包
+                        "..common..",     // 公共包
+                        "..exception..",  // 异常包
+                        "..log.annotation.."  // 日志注解包（OperationType, AuditType）
+                )
                 .because("枚举类应该在合适的包中");
 
         rule.check(classes);
