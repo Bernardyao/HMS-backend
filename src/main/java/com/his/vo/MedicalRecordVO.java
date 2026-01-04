@@ -347,7 +347,9 @@ public class MedicalRecordVO {
      *   <li>示例：1（已提交）</li>
      * </ul>
      */
-    @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）", example = "1")
+    @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）",
+            example = "1",
+            allowableValues = {"0", "1", "2"})
     private Short status;
 
     /**

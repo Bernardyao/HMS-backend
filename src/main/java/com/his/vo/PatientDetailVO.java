@@ -47,7 +47,9 @@ public class PatientDetailVO implements Serializable {
     @Schema(description = "患者姓名", example = "张三")
     private String name;
 
-    @Schema(description = "性别（0=女, 1=男, 2=未知）", example = "1")
+    @Schema(description = "性别（0=女, 1=男, 2=未知）",
+            example = "1",
+            allowableValues = {"0", "1", "2"})
     private Short gender;
 
     @Schema(description = "性别描述", example = "男")

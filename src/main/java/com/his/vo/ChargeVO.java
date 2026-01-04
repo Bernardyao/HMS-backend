@@ -138,7 +138,9 @@ public class ChargeVO implements Serializable {
      *   <li>示例：0（未缴费）</li>
      * </ul>
      */
-    @Schema(description = "收费状态（0=未缴费, 1=已缴费, 2=已退费）", example = "0")
+    @Schema(description = "收费状态（0=未缴费, 1=已缴费, 2=已退费）",
+            example = "0",
+            allowableValues = {"0", "1", "2"})
     private Short status;
 
     /**

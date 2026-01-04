@@ -133,7 +133,9 @@ public class RegistrationDTO implements Serializable {
      * <p><b>示例</b>：1（表示男性）</p>
      */
     @NotNull(message = "性别不能为空")
-    @Schema(description = "性别（0=女, 1=男, 2=未知）", example = "1")
+    @Schema(description = "性别（0=女, 1=男, 2=未知）",
+            example = "1",
+            allowableValues = {"0", "1", "2"})
     private Short gender;
 
     /**
@@ -306,7 +308,9 @@ public class RegistrationDTO implements Serializable {
      *
      * <p><b>示例</b>：3（表示使用微信支付）</p>
      */
-    @Schema(description = "支付方式（1=现金, 2=银行卡, 3=微信, 4=支付宝）", example = "3")
+    @Schema(description = "支付方式（1=现金, 2=银行卡, 3=微信, 4=支付宝, 5=医保）",
+            example = "3",
+            allowableValues = {"1", "2", "3", "4", "5"})
     private Short paymentMethod;
 
     /**

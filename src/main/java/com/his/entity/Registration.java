@@ -125,7 +125,19 @@ public class Registration {
     private BigDecimal registrationFee = BigDecimal.ZERO;
 
     /**
-     * 状态（0=待就诊, 1=已就诊, 2=已取消）
+     * 状态
+     *
+     * <p><b>状态枚举：</b></p>
+     * <ul>
+     *   <li>0 - 待就诊 (WAITING)</li>
+     *   <li>1 - 已就诊 (COMPLETED)</li>
+     *   <li>2 - 已取消 (CANCELLED)</li>
+     *   <li>3 - 已退费 (REFUNDED)</li>
+     *   <li>4 - 已缴挂号费 (PAID_REGISTRATION)</li>
+     *   <li>5 - 就诊中 (IN_CONSULTATION)</li>
+     * </ul>
+     *
+     * @see com.his.enums.RegStatusEnum
      */
     @Column(name = "status", nullable = false)
     private Short status = 0;

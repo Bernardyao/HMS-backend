@@ -173,7 +173,9 @@ public class PrescriptionVO {
      *   <li>示例：1（西药）</li>
      * </ul>
      */
-    @Schema(description = "处方类型（1=西药, 2=中药, 3=中成药）", example = "1")
+    @Schema(description = "处方类型（1=西药, 2=中药, 3=中成药）",
+            example = "1",
+            allowableValues = {"1", "2", "3"})
     private Short prescriptionType;
 
     /**
@@ -215,11 +217,13 @@ public class PrescriptionVO {
      * <p><b>数据格式：</b></p>
      * <ul>
      *   <li>类型：Short</li>
-     *   <li>枚举值：0=草稿, 1=已开方, 2=已审核, 3=已发药</li>
+     *   <li>枚举值：0=草稿, 1=已开方, 2=已审核, 3=已发药, 4=已退费, 5=已缴费</li>
      *   <li>示例：1（已开方）</li>
      * </ul>
      */
-    @Schema(description = "状态（0=草稿, 1=已开方, 2=已审核, 3=已发药）", example = "1")
+    @Schema(description = "状态（0=草稿, 1=已开方, 2=已审核, 3=已发药, 4=已退费, 5=已缴费）",
+            example = "1",
+            allowableValues = {"0", "1", "2", "3", "4", "5"})
     private Short status;
 
     /**

@@ -47,6 +47,14 @@ docs/*
 .env.local
 .env.*.local
 
+# Docker deployment files (keep .env.example)
+deploy/ssl/*
+!deploy/ssl/.gitkeep
+
+# Backup files on server
+backups/
+*.sql.gz
+
 # Misc
 logs/
 GEMINI.md

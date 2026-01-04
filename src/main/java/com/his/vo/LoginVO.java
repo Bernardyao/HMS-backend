@@ -94,7 +94,9 @@ public class LoginVO {
      *   <li>前端根据角色控制页面权限</li>
      * </ul>
      */
-    @Schema(description = "用户角色", example = "ADMIN")
+    @Schema(description = "用户角色",
+            example = "DOCTOR",
+            allowableValues = {"ADMIN", "DOCTOR", "NURSE", "PHARMACIST", "CASHIER"})
     private String role;
 
     /**

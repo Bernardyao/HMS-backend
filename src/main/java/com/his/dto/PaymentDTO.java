@@ -83,7 +83,10 @@ public class PaymentDTO {
      * </ul>
      */
     @NotNull(message = "支付方式不能为空")
-    @Schema(description = "支付方式（1=现金, 2=银行卡, 3=微信, 4=支付宝, 5=医保）", requiredMode = RequiredMode.REQUIRED, example = "3")
+    @Schema(description = "支付方式（1=现金, 2=银行卡, 3=微信, 4=支付宝, 5=医保）",
+            requiredMode = RequiredMode.REQUIRED,
+            example = "3",
+            allowableValues = {"1", "2", "3", "4", "5"})
     private Short paymentMethod;
 
     /**

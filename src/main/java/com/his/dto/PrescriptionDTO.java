@@ -85,7 +85,9 @@ public class PrescriptionDTO {
      *   <li><b>业务规则</b>：同一张处方中的药品类型应与处方类型一致</li>
      * </ul>
      */
-    @Schema(description = "处方类型（1=西药, 2=中药, 3=中成药）", example = "1")
+    @Schema(description = "处方类型（1=西药, 2=中药, 3=中成药）",
+            example = "1",
+            allowableValues = {"1", "2", "3"})
     private Short prescriptionType;
 
     /**

@@ -121,7 +121,7 @@ public class SecurityUtils {
         }
         
         if (!(authentication instanceof JwtAuthenticationToken)) {
-            log.error("认证信息类型异常，期望 JwtAuthenticationToken，实际: {}", 
+            log.warn("认证信息类型异常，期望 JwtAuthenticationToken，实际: {}, 可能是未登录用户访问受保护资源",
                     authentication.getClass().getName());
             throw new IllegalStateException("认证信息无效，请重新登录");
         }

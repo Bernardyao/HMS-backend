@@ -98,7 +98,8 @@ public class DoctorVO {
      *   <li>示例：1（男）</li>
      * </ul>
      */
-    @Schema(description = "性别（0=女, 1=男, 2=未知）")
+    @Schema(description = "性别（0=女, 1=男, 2=未知）",
+            allowableValues = {"0", "1", "2"})
     private Short gender;
 
     /**
@@ -144,6 +145,7 @@ public class DoctorVO {
      *   <li>示例：1（启用）</li>
      * </ul>
      */
-    @Schema(description = "状态（0=停用, 1=启用）")
+    @Schema(description = "状态（0=停用, 1=启用）",
+            allowableValues = {"0", "1"})
     private Short status;
 }

@@ -334,7 +334,7 @@ COMMENT ON COLUMN his_registration.reg_no IS '挂号单号';
 COMMENT ON COLUMN his_registration.visit_date IS '就诊日期';
 COMMENT ON COLUMN his_registration.visit_type IS '就诊类型（1=普通, 2=专家, 3=特需, 4=急诊）';
 COMMENT ON COLUMN his_registration.registration_fee IS '挂号费';
-COMMENT ON COLUMN his_registration.status IS '状态（0=待就诊, 1=就诊中, 2=已完成, 3=已取消）';
+COMMENT ON COLUMN his_registration.status IS '挂号状态（0=待就诊, 1=已就诊, 2=已取消, 3=已退费, 4=已缴费, 5=就诊中）';
 COMMENT ON COLUMN his_registration.is_deleted IS '软删除标记';
 COMMENT ON COLUMN his_registration.created_at IS '创建时间';
 COMMENT ON COLUMN his_registration.updated_at IS '更新时间';

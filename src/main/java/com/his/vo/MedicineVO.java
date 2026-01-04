@@ -110,7 +110,9 @@ public class MedicineVO {
      * </ul>
      */
 
-    @Schema(description = "是否处方药（0=否, 1=是）", example = "1")
+    @Schema(description = "是否处方药（0=否, 1=是）",
+            example = "1",
+            allowableValues = {"0", "1"})
     private Integer isPrescription;
 
     /**
@@ -130,7 +132,9 @@ public class MedicineVO {
      * </ul>
      */
 
-    @Schema(description = "状态（0=停用, 1=启用）", example = "1")
+    @Schema(description = "状态（0=停用, 1=启用）",
+            example = "1",
+            allowableValues = {"0", "1"})
     private Integer status;
 
     // ========== Doctor视图 - 医生和药师可见 ==========

@@ -275,6 +275,117 @@ VALUES
 ALTER TABLE his_charge ALTER COLUMN main_id SET GENERATED ALWAYS;
 
 -- ================================================================================
+-- 序列重置 - 同步所有 IDENTITY 列的序列值
+-- ================================================================================
+-- 由于测试数据手动指定了主键ID，需要将所有表的序列重置到当前最大值+1
+-- 避免后续插入数据时出现主键冲突错误
+-- ================================================================================
+
+DO $$
+DECLARE
+    table_name text;
+    max_id bigint;
+    seq_name text;
+BEGIN
+    -- 定义需要重置序列的表及其主键列
+    FOR table_name IN VALUES
+        ('his_department'),
+        ('his_doctor'),
+        ('his_patient'),
+        ('his_sysuser'),
+        ('his_medicine'),
+        ('his_registration'),
+        ('his_medical_record'),
+        ('his_prescription'),
+        ('his_prescription_detail'),
+        ('his_charge')
+    LOOP
+        -- 获取当前表的最大主键ID
+        EXECUTE format(
+            'SELECT COALESCE(MAX(main_id), 0) FROM %I',
+            table_name
+        ) INTO max_id;
+
+        -- 获取序列名称
+        EXECUTE format(
+            'SELECT pg_get_serial_sequence(%L, %L)',
+            table_name, 'main_id'
+        ) INTO seq_name;
+
+        -- 重置序列到最大ID+1
+        IF seq_name IS NOT NULL THEN
+            EXECUTE format(
+                'SELECT setval(%L, %L, false)',
+                seq_name, max_id + 1
+            );
+            RAISE NOTICE '已重置表 % 的序列，当前最大ID: %，下一个值: %',
+                table_name, max_id, max_id + 1;
+        ELSE
+            RAISE WARNING '表 % 没有找到序列', table_name;
+        END IF;
+    END LOOP;
+END $$;
+
+-- 验证序列重置结果
+DO $$
+DECLARE
+    table_name text;
+    seq_name text;
+    next_val bigint;
+    max_id bigint;
+BEGIN
+    RAISE NOTICE '========================================';
+    RAISE NOTICE '序列重置验证结果';
+    RAISE NOTICE '========================================';
+
+    FOR table_name IN VALUES
+        ('his_department'),
+        ('his_doctor'),
+        ('his_patient'),
+        ('his_sysuser'),
+        ('his_medicine'),
+        ('his_registration'),
+        ('his_medical_record'),
+        ('his_prescription'),
+        ('his_prescription_detail'),
+        ('his_charge')
+    LOOP
+        -- 获取序列名称
+        EXECUTE format(
+            'SELECT pg_get_serial_sequence(%L, %L)',
+            table_name, 'main_id'
+        ) INTO seq_name;
+
+        IF seq_name IS NOT NULL THEN
+            -- 获取下一个序列值
+            EXECUTE format(
+                'SELECT nextval(%L)',
+                seq_name
+            ) INTO next_val;
+
+            -- 由于nextval会推进序列，需要回退以便使用
+            EXECUTE format(
+                'SELECT setval(%L, %L, true)',
+                seq_name, next_val - 1
+            );
+
+            -- 获取当前最大ID
+            EXECUTE format(
+                'SELECT COALESCE(MAX(main_id), 0) FROM %I',
+                table_name
+            ) INTO max_id;
+
+            RAISE NOTICE '%: 最大ID=%, 下一个序列值=%',
+                table_name, max_id, next_val;
+        END IF;
+    END LOOP;
+
+    RAISE NOTICE '========================================';
+    RAISE NOTICE '序列重置完成！现在可以安全插入新数据';
+    RAISE NOTICE '========================================';
+END $$;
+
+-- ================================================================================
 -- 迁移完成
 -- ================================================================================
 -- 所有测试数据已成功插入到数据库中
@@ -297,4 +408,9 @@ ALTER TABLE his_charge ALTER COLUMN main_id SET GENERATED ALWAYS;
 -- - 处方: 8个
 -- - 处方明细: 21个
 -- - 收费: 13个
+--
+-- 重要提示:
+-- - 所有表的 IDENTITY 序列已自动重置到最大主键ID+1
+-- - 现在可以安全地通过应用程序插入新数据，不会出现主键冲突
+-- - 如果需要重新加载此脚本，请先清空相关表的数据
 -- ================================================================================

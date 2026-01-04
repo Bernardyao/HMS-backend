@@ -256,11 +256,13 @@ public class NurseRegistrationVO implements Serializable {
      * <p><b>数据格式：</b></p>
      * <ul>
      *   <li>类型：Short</li>
-     *   <li>枚举值：0=待就诊, 1=已就诊, 2=已取消</li>
+     *   <li>枚举值：0=待就诊, 1=已就诊, 2=已取消, 3=已退费, 4=已缴挂号费, 5=就诊中</li>
      *   <li>示例：0（待就诊）</li>
      * </ul>
      */
-    @Schema(description = "挂号状态（0=待就诊, 1=已就诊, 2=已取消）", example = "0")
+    @Schema(description = "挂号状态（0=待就诊, 1=已就诊, 2=已取消, 3=已退费, 4=已缴挂号费, 5=就诊中）",
+            example = "0",
+            allowableValues = {"0", "1", "2", "3", "4", "5"})
     private Short status;
 
     /**
@@ -271,11 +273,13 @@ public class NurseRegistrationVO implements Serializable {
      * <p><b>数据格式：</b></p>
      * <ul>
      *   <li>类型：String</li>
-     *   <li>枚举值："待就诊"、"已就诊"、"已取消"</li>
+     *   <li>枚举值："待就诊"、"已就诊"、"已取消"、"已退费"、"已缴挂号费"、"就诊中"</li>
      *   <li>示例："待就诊"</li>
      * </ul>
      */
-    @Schema(description = "状态描述", example = "待就诊")
+    @Schema(description = "状态描述",
+            example = "待就诊",
+            allowableValues = {"待就诊", "已就诊", "已取消", "已退费", "已缴挂号费", "就诊中"})
     private String statusDesc;
 
     /**
@@ -290,7 +294,9 @@ public class NurseRegistrationVO implements Serializable {
      *   <li>示例：1（初诊）</li>
      * </ul>
      */
-    @Schema(description = "就诊类型（1=初诊, 2=复诊, 3=急诊）", example = "1")
+    @Schema(description = "就诊类型（1=初诊, 2=复诊, 3=急诊）",
+            example = "1",
+            allowableValues = {"1", "2", "3"})
     private Short visitType;
 
     /**

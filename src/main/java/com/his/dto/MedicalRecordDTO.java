@@ -267,6 +267,8 @@ public class MedicalRecordDTO {
      *   <li><b>业务规则</b>：状态流转：草稿→已提交→已审核，不可逆</li>
      * </ul>
      */
-    @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）", example = "1")
+    @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）",
+            example = "1",
+            allowableValues = {"0", "1", "2"})
     private Short status;
 }
