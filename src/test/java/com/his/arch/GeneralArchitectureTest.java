@@ -98,6 +98,7 @@ class GeneralArchitectureTest {
         ArchRule rule = classes()
                 .that().areEnums()
                 .and().resideInAPackage("com.his..")
+                .and().resideOutsideOfPackage("..test..") // 排除测试类（测试辅助枚举不受此约束）
                 .should().resideInAnyPackage(
                         "..enums..",      // 枚举包
                         "..common..",     // 公共包
