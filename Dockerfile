@@ -36,11 +36,11 @@ RUN ./gradlew assemble -x test --no-daemon \
     -Dorg.gradle.daemon=false \
     -Dorg.gradle.parallel=false
 
-# Step 5: Extract JAR layers for better caching
-# Spring Boot layered JARs allow more efficient Docker layer caching
-# 找到不含 "plain" 的 JAR 文件（Spring Boot fat JAR）
+# Step 5: Prepare JAR for runtime
+# 找到 Spring Boot fat JAR（不含 plain）
 RUN JAR=$(ls build/libs/*.jar | grep -v plain | head -1) && \
-    java -Djarmode=layertools -jar "$JAR" extract
+    cp "$JAR" /app.jar && \
+    ls -lh /app.jar
 
 # ============================================================
 # Stage 2: Runtime - Minimal JRE image
@@ -58,11 +58,8 @@ RUN apt-get update && \
 RUN addgroup --system --gid 1001 javauser && \
     adduser --system --uid 1001 --ingroup javauser --shell /bin/false javauser
 
-# Copy extracted layers from builder stage
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/application/ ./
+# Copy JAR file from builder stage
+COPY --from=builder /app.jar /app.jar
 
 # Create logs directory and set permissions
 RUN mkdir -p /app/logs && \
@@ -82,11 +79,12 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 # -XX:MaxRAMPercentage=75.0: Use up to 75% of container memory limit
 # -XX:InitialRAMPercentage=50.0: Start with 50% of container memory limit
 # -XX:+UseG1GC: Use G1 garbage collector for better memory management
-# Can be overridden via JAVA_OPTS environment variable
+# -jar: Run the JAR file directly
 ENTRYPOINT ["java", \
     "-XX:MaxRAMPercentage=75.0", \
     "-XX:InitialRAMPercentage=50.0", \
     "-XX:+UseG1GC", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dspring.profiles.active=prod", \
-    "org.springframework.boot.loader.JarLauncher"]
+    "-jar", \
+    "/app.jar"]
