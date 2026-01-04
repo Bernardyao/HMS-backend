@@ -5,7 +5,7 @@
 # ============================================================
 # Stage 1: Builder - Compile application in container
 # ============================================================
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ RUN java -Djarmode=layertools -jar build/libs/*.jar extract
 # ============================================================
 # Stage 2: Runtime - Minimal JRE image
 # ============================================================
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
