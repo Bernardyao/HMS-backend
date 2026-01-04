@@ -187,8 +187,8 @@ class PharmacistPrescriptionControllerTest extends BaseControllerTest {
                         .with(authentication(setupPharmacistAuthentication()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value(containsString("已缴费")));
+                .andExpect(status().isBadRequest()) // GlobalExceptionHandler returns 400 for IllegalStateException
+                .andExpect(jsonPath("$.code").value(400)) // Result.badRequest() has code 400
+                .andExpect(jsonPath("$.message").value(containsString("只有已缴费状态")));
     }
 }

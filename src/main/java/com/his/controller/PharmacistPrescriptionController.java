@@ -6,7 +6,6 @@ import com.his.converter.VoConverter;
 import com.his.entity.Prescription;
 import com.his.log.annotation.AuditLog;
 import com.his.log.annotation.AuditType;
-import com.his.log.utils.LogUtils;
 import com.his.service.PrescriptionService;
 import com.his.vo.PrescriptionVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,8 +28,12 @@ import java.util.List;
  *   <li><b>待发药列表</b>：查询所有已审核通过但未发药的处方</li>
  *   <li><b>处方发药</b>：根据处方发药，扣减药品库存</li>
  *   <li><b>处方退药</b>：处理退药申请，恢复药品库存</li>
- *   <li><b>处方查询</b>：根据处方ID查询处方详情</li>
+ *   <li><b>今日统计</b>：查询今日发药统计数据</li>
  * </ul>
+ *
+ * <h3>重要说明</h3>
+ * <p>本控制器只包含操作类接口，处方查询接口已迁移至 {@link com.his.controller.CommonPrescriptionController}</p>
+ * <p>查询处方请使用：<code>GET /api/common/prescriptions</code></p>
  *
  * <h3>角色权限</h3>
  * <p>本控制器所有接口需要PHARMACIST（药师）或ADMIN（管理员）角色</p>
@@ -44,11 +47,12 @@ import java.util.List;
  * </ul>
  *
  * @author HIS 开发团队
- * @version 1.0
- * @since 1.0
+ * @version 2.0
+ * @since 2.0
  * @see com.his.service.PrescriptionService
+ * @see com.his.controller.CommonPrescriptionController
  */
-@Tag(name = "药师工作站-处方管理", description = "药师工作站的处方审核、发药等接口")
+@Tag(name = "药师工作站-处方管理", description = "药师工作站的处方操作接口（查询功能已迁移至/common）")
 @Slf4j
 @RestController
 @RequestMapping("/api/pharmacist/prescriptions")
@@ -60,52 +64,29 @@ public class PharmacistPrescriptionController {
 
     /**
      * 待发药处方列表
-     * 
+     * <p>查询所有已审核通过但未发药的处方列表，用于药师工作站的待发药队列</p>
+     *
      * @return 待发药的处方列表
      */
     @Operation(summary = "待发药处方列表", description = "查询所有已审核通过但未发药的处方列表")
     @GetMapping("/pending")
     public Result<List<PrescriptionVO>> getPendingDispenseList() {
-        try {
-            log.info("查询待发药处方列表");
-            List<Prescription> prescriptions = prescriptionService.getPendingDispenseList();
-            List<PrescriptionVO> vos = prescriptions.stream()
-                    .map(VoConverter::toPrescriptionVO)
-                    .collect(java.util.stream.Collectors.toList());
-            return Result.success("查询成功", vos);
-        } catch (Exception e) {
-            log.error("查询待发药列表失败", e);
-            return Result.error("查询失败: " + e.getMessage());
-        }
-    }
+        log.info("【药师】查询待发药处方列表");
 
-    /**
-     * 根据ID查询处方
-     *
-     * @param id 处方ID
-     * @return 处方信息
-     */
-    @Operation(summary = "查询处方详情", description = "根据处方ID查询详细信息")
-    @GetMapping("/{id}")
-    public Result<PrescriptionVO> getById(
-            @Parameter(description = "处方ID", required = true, example = "1")
-            @PathVariable("id") Long id) {
-        try {
-            log.info("收到查询处方请求，ID: {}", id);
-            Prescription prescription = prescriptionService.getById(id);
-            PrescriptionVO vo = VoConverter.toPrescriptionVO(prescription);
-            return Result.success("查询成功", vo);
-        } catch (IllegalArgumentException e) {
-            log.warn("查询处方失败: {}", e.getMessage());
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            log.error("查询处方失败", e);
-            return Result.error("查询失败: " + e.getMessage());
-        }
+        List<Prescription> prescriptions = prescriptionService.getPendingDispenseList();
+        List<PrescriptionVO> vos = prescriptions.stream()
+                .map(VoConverter::toPrescriptionVO)
+                .collect(java.util.stream.Collectors.toList());
+
+        return Result.success(
+            String.format("查询成功，共 %d 张待发药处方", vos.size()),
+            vos
+        );
     }
 
     /**
      * 审核处方
+     * <p>对已开方的处方进行审核，审核通过后才能进行收费和发药</p>
      *
      * @param id 处方ID
      * @param reviewDoctorId 审核医生ID
@@ -121,22 +102,17 @@ public class PharmacistPrescriptionController {
             @RequestParam("reviewDoctorId") Long reviewDoctorId,
             @Parameter(description = "审核备注", example = "处方合理，准予发药")
             @RequestParam(value = "remark", required = false) String remark) {
-        try {
-            log.info("收到审核处方请求，ID: {}, 审核医生ID: {}", id, reviewDoctorId);
-            prescriptionService.review(id, reviewDoctorId, remark);
-            return Result.success("审核成功", null);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            log.warn("审核处方失败: {}", e.getMessage());
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            log.error("审核处方失败", e);
-            return Result.error("审核失败: " + e.getMessage());
-        }
+
+        log.info("【药师】审核处方 - ID: {}, 审核医生ID: {}", id, reviewDoctorId);
+        prescriptionService.review(id, reviewDoctorId, remark);
+
+        return Result.success("审核成功", null);
     }
 
     /**
      * 发药
-     * 
+     * <p>根据处方ID进行发药操作，自动扣减药品库存</p>
+     *
      * @param id 处方ID
      * @return 发药结果
      */
@@ -151,30 +127,20 @@ public class PharmacistPrescriptionController {
     public Result<String> dispense(
             @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable Long id) {
-        try {
-            LogUtils.logBusinessOperation("药房管理", "发药", "处方ID: " + id);
 
-            // 获取当前登录用户ID作为发药人
-            Long pharmacistId = SecurityUtils.getCurrentUserId();
+        log.info("【药师】发药 - 处方ID: {}", id);
 
-            prescriptionService.dispense(id, pharmacistId);
+        // 获取当前登录用户ID作为发药人
+        Long pharmacistId = SecurityUtils.getCurrentUserId();
+        prescriptionService.dispense(id, pharmacistId);
 
-            return Result.success("发药成功", "发药成功");
-        } catch (IllegalArgumentException e) {
-            LogUtils.logValidationError("发药", e.getMessage(), "处方ID: " + id);
-            return Result.badRequest(e.getMessage());
-        } catch (IllegalStateException e) {
-            LogUtils.logValidationError("发药", e.getMessage(), "处方ID: " + id);
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            LogUtils.logSystemError("药房管理", "发药失败", e);
-            return Result.error("发药失败: " + e.getMessage());
-        }
+        return Result.success("发药成功", "发药成功");
     }
 
     /**
      * 退药
-     * 
+     * <p>为已发药记录进行退药操作，自动归还库存</p>
+     *
      * @param id 处方ID
      * @param reason 退药原因
      * @return 退药结果
@@ -192,42 +158,27 @@ public class PharmacistPrescriptionController {
             @PathVariable Long id,
             @Parameter(description = "退药原因", required = true, example = "患者要求退药")
             @RequestParam String reason) {
-        try {
-            LogUtils.logSensitiveOperation("退药", "处方", id);
 
-            prescriptionService.returnMedicine(id, reason);
+        log.info("【药师】退药 - 处方ID: {}, 原因: {}", id, reason);
+        prescriptionService.returnMedicine(id, reason);
 
-            return Result.success("退药成功", null);
-        } catch (IllegalArgumentException e) {
-            LogUtils.logValidationError("退药", e.getMessage(), "处方ID: " + id);
-            return Result.badRequest(e.getMessage());
-        } catch (IllegalStateException e) {
-            LogUtils.logValidationError("退药", e.getMessage(), "处方ID: " + id);
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            LogUtils.logSystemError("药房管理", "退药失败", e);
-            return Result.error("退药失败: " + e.getMessage());
-        }
+        return Result.success("退药成功", null);
     }
 
     /**
      * 今日发药统计
-     * 
+     * <p>统计当前药师今日的发药数量、处方数等信息</p>
+     *
      * @return 发药统计信息
      */
     @Operation(summary = "今日发药统计", description = "统计当前药师今日的发药数量、处方数等信息")
     @GetMapping("/statistics/today")
     public Result<com.his.dto.PharmacistStatisticsDTO> getTodayStatistics() {
-        try {
-            log.info("查询今日发药统计");
-            
-            Long pharmacistId = SecurityUtils.getCurrentUserId();
-            com.his.dto.PharmacistStatisticsDTO stats = prescriptionService.getPharmacistStatistics(pharmacistId);
-            
-            return Result.success("查询成功", stats);
-        } catch (Exception e) {
-            log.error("查询发药统计失败", e);
-            return Result.error("查询失败: " + e.getMessage());
-        }
+        log.info("【药师】查询今日发药统计");
+
+        Long pharmacistId = SecurityUtils.getCurrentUserId();
+        com.his.dto.PharmacistStatisticsDTO stats = prescriptionService.getPharmacistStatistics(pharmacistId);
+
+        return Result.success("查询成功", stats);
     }
 }

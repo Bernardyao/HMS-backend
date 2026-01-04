@@ -1,5 +1,6 @@
 package com.his.vo;
 
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,9 +11,17 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 药品视图对象
+ * 药品视图对象（统一版本，支持JsonView）
  *
  * <p>用于药品管理界面和开方界面，封装药品的完整信息返回给前端</p>
+ * <p>使用JsonView控制不同角色可见的字段，避免敏感信息泄露</p>
+ *
+ * <h3>JsonView分层</h3>
+ * <ul>
+ *   <li><b>Public</b>: 公共视图 - 所有认证用户可见（基础信息）</li>
+ *   <li><b>Doctor</b>: 医生视图 - 医生和药师可见（含用法用量等）</li>
+ *   <li><b>Pharmacist</b>: 药师视图 - 仅药师可见（含进货价等敏感信息）</li>
+ * </ul>
  *
  * <h3>主要功能</h3>
  * <ul>
@@ -22,25 +31,8 @@ import java.time.LocalDateTime;
  *   <li><b>药品信息</b>：包含药品的规格、剂型、生产厂家等详细信息</li>
  * </ul>
  *
- * <h3>数据来源</h3>
- * <p>从 {@link com.his.entity.Medicine} 实体转换而来，包含药品的完整信息</p>
- *
- * <h3>使用场景</h3>
- * <ul>
- *   <li><b>药品管理</b>：管理员查看和管理药品信息</li>
- *   <li><b>开方选药</b>：医生开处方时查询和选择药品</li>
- *   <li><b>药品查询</b>：按条件查询药品信息</li>
- * </ul>
- *
- * <h3>特殊说明</h3>
- * <ul>
- *   <li><b>retailPrice字段</b>：BigDecimal类型，精度为2位小数，单位为元</li>
- *   <li><b>stockQuantity字段</b>：实时库存数量，开方时会检查库存</li>
- *   <li><b>isPrescription字段</b>：标识是否为处方药，影响处方开具流程</li>
- * </ul>
- *
  * @author HIS 开发团队
- * @version 1.0
+ * @version 2.0
  * @since 1.0
  */
 @Data
@@ -50,232 +42,197 @@ import java.time.LocalDateTime;
 @Schema(description = "药品视图对象")
 public class MedicineVO {
 
+    // ========== Public视图 - 所有角色可见 ==========
+
     /**
      * 药品ID
-     *
-     * <p>药品在数据库中的唯一标识</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：Long</li>
-     *   <li>必填：是</li>
-     *   <li>唯一：是</li>
-     *   <li>示例：1</li>
-     * </ul>
      */
+    
     @Schema(description = "药品ID", example = "1")
     private Long mainId;
 
     /**
      * 药品编码
-     *
-     * <p>药品的业务编码，用于药品识别和管理</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-50字符</li>
-     *   <li>示例："MED001"</li>
-     *   <li>唯一：是</li>
-     * </ul>
      */
+    
     @Schema(description = "药品编码", example = "MED001")
     private String medicineCode;
 
     /**
      * 药品名称
-     *
-     * <p>药品的商品名称</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-100字符</li>
-     *   <li>示例："阿莫西林胶囊"</li>
-     * </ul>
      */
+    
     @Schema(description = "药品名称", example = "阿莫西林胶囊")
     private String name;
 
     /**
      * 通用名称
-     *
-     * <p>药品的通用名（化学名）</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-100字符</li>
-     *   <li>示例："阿莫西林"</li>
-     * </ul>
      */
+    
     @Schema(description = "通用名称", example = "阿莫西林")
     private String genericName;
 
     /**
      * 零售价格
-     *
-     * <p>药品的零售价格，单位为元</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：BigDecimal</li>
-     *   <li>精度：2位小数</li>
-     *   <li>示例：12.50（12.5元）</li>
-     *   <li>单位：元</li>
-     * </ul>
      */
-    @Schema(description = "零售价格", example = "12.50")
+    
+    @Schema(description = "零售价格（元）", example = "25.80")
     private BigDecimal retailPrice;
 
     /**
      * 库存数量
-     *
-     * <p>药品当前库存数量</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：Integer</li>
-     *   <li>最小值：0</li>
-     *   <li>示例：1000</li>
-     *   <li>单位：与unit字段一致</li>
-     * </ul>
      */
-    @Schema(description = "库存数量", example = "1000")
+    
+    @Schema(description = "库存数量", example = "100")
     private Integer stockQuantity;
 
     /**
-     * 状态
-     *
-     * <p>药品的启用状态</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：Short</li>
-     *   <li>枚举值：0=停用, 1=启用</li>
-     *   <li>示例：1（启用）</li>
-     * </ul>
-     */
-    @Schema(description = "状态（0=停用, 1=启用）", example = "1")
-    private Short status;
-
-    /**
-     * 规格
-     *
-     * <p>药品的规格说明</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-50字符</li>
-     *   <li>示例："0.25g*24粒"</li>
-     * </ul>
-     */
-    @Schema(description = "规格", example = "0.25g*24粒")
-    private String specification;
-
-    /**
-     * 单位
-     *
-     * <p>药品的计量单位</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-10字符</li>
-     *   <li>示例："盒"、"瓶"、"袋"</li>
-     * </ul>
-     */
-    @Schema(description = "单位", example = "盒")
-    private String unit;
-
-    /**
-     * 剂型
-     *
-     * <p>药品的剂型</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-20字符</li>
-     *   <li>示例："胶囊"、"片剂"、"注射液"</li>
-     * </ul>
-     */
-    @Schema(description = "剂型", example = "胶囊")
-    private String dosageForm;
-
-    /**
-     * 生产厂家
-     *
-     * <p>药品的生产企业名称</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-100字符</li>
-     *   <li>示例："XX制药"</li>
-     * </ul>
-     */
-    @Schema(description = "生产厂家", example = "XX制药")
-    private String manufacturer;
-
-    /**
      * 药品分类
-     *
-     * <p>药品的分类归属</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：String</li>
-     *   <li>长度：1-50字符</li>
-     *   <li>示例："抗生素"、"解热镇痛药"</li>
-     * </ul>
      */
+    
     @Schema(description = "药品分类", example = "抗生素")
     private String category;
 
     /**
      * 是否处方药
      *
-     * <p>标识药品是否需要处方才能购买</p>
-     *
-     * <p><b>数据格式：</b></p>
+     * <p><b>类型说明：</b></p>
      * <ul>
-     *   <li>类型：Short</li>
-     *   <li>枚举值：0=否, 1=是</li>
-     *   <li>示例：1（是处方药）</li>
+     *   <li>使用 Integer 而非 Short，保证与 JSON 序列化的一致性</li>
+     *   <li>JavaScript 中的数字类型统一为 Number，避免类型转换问题</li>
+     *   <li>测试断言可直接使用整数字面量，无需强制类型转换</li>
+     * </ul>
+     *
+     * <p><b>取值范围：</b></p>
+     * <ul>
+     *   <li>0 = 非处方药</li>
+     *   <li>1 = 处方药</li>
      * </ul>
      */
+
     @Schema(description = "是否处方药（0=否, 1=是）", example = "1")
-    private Short isPrescription;
+    private Integer isPrescription;
+
+    /**
+     * 状态
+     *
+     * <p><b>类型说明：</b></p>
+     * <ul>
+     *   <li>使用 Integer 而非 Short，保证与 JSON 序列化的一致性</li>
+     *   <li>JavaScript 中的数字类型统一为 Number，避免类型转换问题</li>
+     *   <li>测试断言可直接使用整数字面量，无需强制类型转换</li>
+     * </ul>
+     *
+     * <p><b>取值范围：</b></p>
+     * <ul>
+     *   <li>0 = 停用</li>
+     *   <li>1 = 启用</li>
+     * </ul>
+     */
+
+    @Schema(description = "状态（0=停用, 1=启用）", example = "1")
+    private Integer status;
+
+    // ========== Doctor视图 - 医生和药师可见 ==========
+
+    /**
+     * 规格
+     */
+    
+    @Schema(description = "规格", example = "0.25g*24粒")
+    private String specification;
+
+    /**
+     * 单位
+     */
+    
+    @Schema(description = "单位", example = "盒")
+    private String unit;
+
+    /**
+     * 剂型
+     */
+    
+    @Schema(description = "剂型", example = "胶囊")
+    private String dosageForm;
+
+    /**
+     * 生产厂家
+     */
+    
+    @Schema(description = "生产厂家", example = "XX制药")
+    private String manufacturer;
+
+    /**
+     * 库存状态（自动计算）
+     */
+    
+    @Schema(description = "库存状态", example = "IN_STOCK",
+            allowableValues = {"IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"})
+    private String stockStatus;
+
+    // ========== Pharmacist视图 - 仅药师可见（敏感信息）==========
+
+    /**
+     * 进货价格（敏感）
+     */
+    
+    @Schema(description = "进货价格（元）", example = "18.50")
+    private BigDecimal purchasePrice;
+
+    /**
+     * 最低库存（预警线）
+     */
+    
+    @Schema(description = "最低库存（预警线）", example = "50")
+    private Integer minStock;
+
+    /**
+     * 最高库存（上限）
+     */
+    
+    @Schema(description = "最高库存（上限）", example = "500")
+    private Integer maxStock;
+
+    /**
+     * 储存条件
+     */
+    
+    @Schema(description = "储存条件", example = "密闭，在阴凉干燥处保存")
+    private String storageCondition;
+
+    /**
+     * 批准文号
+     */
+    
+    @Schema(description = "批准文号", example = "国药准字H12345678")
+    private String approvalNo;
+
+    /**
+     * 过期预警天数
+     */
+    
+    @Schema(description = "过期预警天数", example = "90")
+    private Integer expiryWarningDays;
+
+    /**
+     * 利润率（%）
+     */
+    
+    @Schema(description = "利润率（%）", example = "39.46")
+    private BigDecimal profitMargin;
 
     /**
      * 创建时间
-     *
-     * <p>药品信息创建的时间</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：LocalDateTime</li>
-     *   <li>格式：yyyy-MM-ddTHH:mm:ss</li>
-     *   <li>示例："2025-12-20T10:00:00"</li>
-     * </ul>
      */
-    @Schema(description = "创建时间", example = "2025-12-20T10:00:00")
+    
+    @Schema(description = "创建时间", example = "2023-01-01T10:00:00")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
-     *
-     * <p>药品信息最后更新的时间</p>
-     *
-     * <p><b>数据格式：</b></p>
-     * <ul>
-     *   <li>类型：LocalDateTime</li>
-     *   <li>格式：yyyy-MM-ddTHH:mm:ss</li>
-     *   <li>示例："2025-12-20T10:00:00"</li>
-     * </ul>
      */
-    @Schema(description = "更新时间", example = "2025-12-20T10:00:00")
+    
+    @Schema(description = "更新时间", example = "2023-12-01T15:30:00")
     private LocalDateTime updatedAt;
 }

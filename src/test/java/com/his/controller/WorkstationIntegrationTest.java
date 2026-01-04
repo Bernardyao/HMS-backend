@@ -355,7 +355,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("8. 测试查询处方详情 - 应返回PrescriptionVO格式")
     void testGetPrescriptionById() throws Exception {
-        mockMvc.perform(get("/api/doctor/prescriptions/{id}", testPrescriptionId))
+        mockMvc.perform(get("/api/common/prescriptions/{id}", testPrescriptionId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -375,7 +375,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
     @WithMockUser(roles = "DOCTOR")
     @DisplayName("9. 测试根据病历查询处方列表 - 应返回PrescriptionVO列表")
     void testGetPrescriptionsByRecordId() throws Exception {
-        mockMvc.perform(get("/api/doctor/prescriptions/by-record/{recordId}", testRecordId))
+        mockMvc.perform(get("/api/common/prescriptions/by-record/{recordId}", testRecordId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -402,7 +402,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest()) // GlobalExceptionHandler returns HTTP 400
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message", anyOf(
                     containsString("不存在"),

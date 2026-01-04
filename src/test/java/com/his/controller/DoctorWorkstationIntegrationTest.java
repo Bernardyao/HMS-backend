@@ -441,7 +441,7 @@ class DoctorWorkstationIntegrationTest extends BaseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest()) // GlobalExceptionHandler returns HTTP 400
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value(containsString("请先创建病历")));
     }
@@ -479,8 +479,8 @@ class DoctorWorkstationIntegrationTest extends BaseControllerTest {
         JsonNode root = objectMapper.readTree(response);
         Long prescriptionId = root.get("data").get("mainId").asLong();
 
-        // 查询处方详情
-        mockMvc.perform(get("/api/doctor/prescriptions/{id}", prescriptionId)
+        // 查询处方详情 - API已迁移到 /api/common
+        mockMvc.perform(get("/api/common/prescriptions/{id}", prescriptionId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())

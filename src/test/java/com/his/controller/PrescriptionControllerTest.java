@@ -10,37 +10,35 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 处方管理控制器测试类
+ * 处方管理控制器测试类（重构后版本）
  * <p>
  * 测试范围：
  * <ul>
  *   <li>创建处方（POST /api/doctor/prescriptions/create）</li>
- *   <li>查询处方详情（GET /api/doctor/prescriptions/{id}）</li>
- *   <li>根据病历ID查询处方列表（GET /api/doctor/prescriptions/by-record/{recordId}）</li>
  *   <li>审核处方（POST /api/doctor/prescriptions/{id}/review）</li>
  * </ul>
  *
+ * <p>注意：查询功能已移至 {@link com.his.controller.CommonPrescriptionController}</p>
  * <p>覆盖率目标: 75%+
  *
  * @author HIS开发团队
- * @since 1.0.0
+ * @version 2.0
  */
-@DisplayName("处方控制器测试")
+@DisplayName("处方控制器测试（操作类）")
 class PrescriptionControllerTest extends BaseControllerTest {
 
     @MockBean
@@ -53,36 +51,18 @@ class PrescriptionControllerTest extends BaseControllerTest {
     @WithMockUser(roles = "DOCTOR")
     void testCreatePrescription_Success() throws Exception {
         // Given: 准备处方DTO
-        PrescriptionDTO dto = new PrescriptionDTO();
-        dto.setRegistrationId(1L);
-        dto.setPrescriptionType((short) 1);
-        dto.setValidityDays(3);
-
-        PrescriptionDTO.PrescriptionItemDTO item1 = new PrescriptionDTO.PrescriptionItemDTO();
-        item1.setMedicineId(1L);
-        item1.setQuantity(10);
-        item1.setFrequency("一日三次");
-        item1.setDosage("每次2片");
-        item1.setRoute("口服");
-
-        PrescriptionDTO.PrescriptionItemDTO item2 = new PrescriptionDTO.PrescriptionItemDTO();
-        item2.setMedicineId(2L);
-        item2.setQuantity(5);
-        item2.setFrequency("一日两次");
-        item2.setDosage("每次1片");
-
-        dto.setItems(Arrays.asList(item1, item2));
+        PrescriptionDTO dto = createTestPrescriptionDTO();
 
         Prescription savedPrescription = new Prescription();
         savedPrescription.setMainId(1L);
         savedPrescription.setPrescriptionNo("RX20260103001");
         savedPrescription.setPrescriptionType((short) 1);
-        savedPrescription.setTotalAmount(new java.math.BigDecimal("150.00"));
+        savedPrescription.setTotalAmount(new BigDecimal("150.00"));
         savedPrescription.setItemCount(2);
         savedPrescription.setStatus((short) 0);
         savedPrescription.setValidityDays(3);
-        savedPrescription.setCreatedAt(java.time.LocalDateTime.now());
-        savedPrescription.setUpdatedAt(java.time.LocalDateTime.now());
+        savedPrescription.setCreatedAt(LocalDateTime.now());
+        savedPrescription.setUpdatedAt(LocalDateTime.now());
 
         when(prescriptionService.createPrescription(any())).thenReturn(savedPrescription);
 
@@ -117,11 +97,11 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new IllegalArgumentException("挂号记录不存在"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("挂号记录不存在"));
     }
@@ -138,11 +118,11 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new IllegalArgumentException("药品明细不能为空"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("药品明细不能为空"));
     }
@@ -163,11 +143,11 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new IllegalArgumentException("药品库存不足"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("药品库存不足"));
     }
@@ -188,11 +168,11 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new IllegalArgumentException("药品不存在"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("药品不存在"));
     }
@@ -209,174 +189,12 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new RuntimeException("数据库连接失败"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 500 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 500
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value(containsString("创建失败")));
-    }
-
-    // ==================== GET /{id} - 查询处方详情测试 ====================
-
-    @Test
-    @DisplayName("查询处方详情 - DOCTOR角色成功")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionById_Doctor_Success() throws Exception {
-        // Given: 准备处方数据
-        Prescription prescription = new Prescription();
-        prescription.setMainId(1L);
-        prescription.setPrescriptionType((short) 1);
-
-        when(prescriptionService.getById(1L)).thenReturn(prescription);
-
-        // When & Then
-        mockMvc.perform(get("/api/doctor/prescriptions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("查询成功"))
-                .andExpect(jsonPath("$.data.mainId").value(1));
-    }
-
-    @Test
-    @DisplayName("查询处方详情 - PHARMACIST角色成功")
-    @WithMockUser(roles = "PHARMACIST")
-    void testGetPrescriptionById_Pharmacist_Success() throws Exception {
-        // Given: 准备处方数据
-        Prescription prescription = new Prescription();
-        prescription.setMainId(1L);
-
-        when(prescriptionService.getById(1L)).thenReturn(prescription);
-
-        // When & Then
-        mockMvc.perform(get("/api/doctor/prescriptions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    @DisplayName("查询处方详情 - ADMIN角色成功")
-    @WithMockUser(roles = "ADMIN")
-    void testGetPrescriptionById_Admin_Success() throws Exception {
-        // Given: 准备处方数据
-        Prescription prescription = new Prescription();
-        prescription.setMainId(1L);
-
-        when(prescriptionService.getById(1L)).thenReturn(prescription);
-
-        // When & Then
-        mockMvc.perform(get("/api/doctor/prescriptions/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    @DisplayName("查询处方详情 - 处方不存在")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionById_NotFound() throws Exception {
-        // Given: 处方不存在
-        when(prescriptionService.getById(999L))
-                .thenThrow(new IllegalArgumentException("处方不存在"));
-
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
-        mockMvc.perform(get("/api/doctor/prescriptions/999"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("处方不存在"));
-    }
-
-    @Test
-    @DisplayName("查询处方详情 - 无效ID")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionById_InvalidId() throws Exception {
-        // Given: 无效ID
-        when(prescriptionService.getById(0L))
-                .thenThrow(new IllegalArgumentException("无效的处方ID"));
-
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
-        mockMvc.perform(get("/api/doctor/prescriptions/0"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400));
-    }
-
-    @Test
-    @DisplayName("查询处方详情 - NURSE角色无权限")
-    @WithMockUser(roles = "NURSE")
-    void testGetPrescriptionById_AccessDenied() throws Exception {
-        // Given: NURSE角色尝试访问
-        // When & Then: 应返回403
-        mockMvc.perform(get("/api/doctor/prescriptions/1"))
-                .andExpect(status().isForbidden());
-    }
-
-    // ==================== GET /by-record/{recordId} - 根据病历ID查询处方列表测试 ====================
-
-    @Test
-    @DisplayName("根据病历ID查询处方 - 成功返回列表")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionsByRecordId_Success() throws Exception {
-        // Given: 准备处方列表
-        Prescription prescription1 = new Prescription();
-        prescription1.setMainId(1L);
-
-        Prescription prescription2 = new Prescription();
-        prescription2.setMainId(2L);
-
-        List<Prescription> prescriptions = Arrays.asList(prescription1, prescription2);
-        when(prescriptionService.getByRecordId(1L)).thenReturn(prescriptions);
-
-        // When & Then
-        mockMvc.perform(get("/api/doctor/prescriptions/by-record/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("查询成功"))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2));
-    }
-
-    @Test
-    @DisplayName("根据病历ID查询处方 - 空列表")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionsByRecordId_EmptyList() throws Exception {
-        // Given: 返回空列表
-        when(prescriptionService.getByRecordId(1L)).thenReturn(Collections.emptyList());
-
-        // When & Then
-        mockMvc.perform(get("/api/doctor/prescriptions/by-record/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(0));
-    }
-
-    @Test
-    @DisplayName("根据病历ID查询处方 - 病历不存在")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionsByRecordId_RecordNotFound() throws Exception {
-        // Given: 病历不存在
-        when(prescriptionService.getByRecordId(999L))
-                .thenThrow(new IllegalArgumentException("病历不存在"));
-
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
-        mockMvc.perform(get("/api/doctor/prescriptions/by-record/999"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("病历不存在"));
-    }
-
-    @Test
-    @DisplayName("根据病历ID查询处方 - 无效ID")
-    @WithMockUser(roles = "DOCTOR")
-    void testGetPrescriptionsByRecordId_InvalidId() throws Exception {
-        // Given: 无效ID
-        when(prescriptionService.getByRecordId(0L))
-                .thenThrow(new IllegalArgumentException("无效的病历ID"));
-
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
-        mockMvc.perform(get("/api/doctor/prescriptions/by-record/0"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400));
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500));
     }
 
     // ==================== POST /{id}/review - 审核处方测试 ====================
@@ -414,10 +232,10 @@ class PrescriptionControllerTest extends BaseControllerTest {
         doThrow(new IllegalStateException("处方已审核，无法重复审核"))
                 .when(prescriptionService).review(eq(1L), eq(10L), any());
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/1/review")
                         .param("reviewDoctorId", "10"))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("处方已审核，无法重复审核"));
     }
@@ -430,10 +248,10 @@ class PrescriptionControllerTest extends BaseControllerTest {
         doThrow(new IllegalArgumentException("处方不存在"))
                 .when(prescriptionService).review(eq(999L), eq(10L), any());
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/999/review")
                         .param("reviewDoctorId", "10"))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("处方不存在"));
     }
@@ -446,10 +264,10 @@ class PrescriptionControllerTest extends BaseControllerTest {
         doThrow(new IllegalArgumentException("无效的处方ID"))
                 .when(prescriptionService).review(eq(0L), eq(10L), any());
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/0/review")
                         .param("reviewDoctorId", "10"))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
     }
 
@@ -474,7 +292,7 @@ class PrescriptionControllerTest extends BaseControllerTest {
         dto.setRegistrationId(1L);
         dto.setItems(Collections.emptyList());
 
-        // When & Then: 未认证用户会收到401或403（取决于Security配置）
+        // When & Then: 未认证用户会收到401或403
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
@@ -498,11 +316,11 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new IllegalArgumentException("非法参数"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 400 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 400
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
     }
 
@@ -518,11 +336,40 @@ class PrescriptionControllerTest extends BaseControllerTest {
         when(prescriptionService.createPrescription(any()))
                 .thenThrow(new RuntimeException("系统错误"));
 
-        // When & Then: Controller catches exception and returns HTTP 200 with code 500 in body
+        // When & Then: GlobalExceptionHandler返回HTTP 500
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500));
+    }
+
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 创建测试用处方DTO
+     */
+    private PrescriptionDTO createTestPrescriptionDTO() {
+        PrescriptionDTO dto = new PrescriptionDTO();
+        dto.setRegistrationId(1L);
+        dto.setPrescriptionType((short) 1);
+        dto.setValidityDays(3);
+
+        PrescriptionDTO.PrescriptionItemDTO item1 = new PrescriptionDTO.PrescriptionItemDTO();
+        item1.setMedicineId(1L);
+        item1.setQuantity(10);
+        item1.setFrequency("一日三次");
+        item1.setDosage("每次2片");
+        item1.setRoute("口服");
+
+        PrescriptionDTO.PrescriptionItemDTO item2 = new PrescriptionDTO.PrescriptionItemDTO();
+        item2.setMedicineId(2L);
+        item2.setQuantity(5);
+        item2.setFrequency("一日两次");
+        item2.setDosage("每次1片");
+
+        dto.setItems(Arrays.asList(item1, item2));
+
+        return dto;
     }
 }

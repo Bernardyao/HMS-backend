@@ -9,8 +9,7 @@ import com.his.vo.MedicineVO;
 import com.his.vo.PrescriptionVO;
 import com.his.vo.MedicalRecordVO;
 import com.his.vo.RegistrationVO;
-import com.his.vo.DoctorMedicineVO;
-import com.his.vo.PharmacistMedicineVO;
+import com.his.vo.views.MedicineViews;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -31,33 +30,89 @@ public class VoConverter {
     }
 
     /**
-     * Medicine实体转MedicineVO
+     * Medicine实体转MedicineVO（默认使用Public视图）
      *
      * @param medicine 药品实体
      * @return MedicineVO
      */
     public static MedicineVO toMedicineVO(Medicine medicine) {
+        return toMedicineVO(medicine, MedicineViews.Public.class);
+    }
+
+    /**
+     * Medicine实体转MedicineVO（支持JsonView）
+     * <p>
+     * 根据指定的视图类型返回不同字段的数据，避免敏感信息泄露
+     * </p>
+     *
+     * <h3>视图类型说明</h3>
+     * <ul>
+     *   <li><b>Public</b>: 公共视图 - 所有认证用户可见（基础信息）</li>
+     *   <li><b>Doctor</b>: 医生视图 - 医生和药师可见（含用法用量等）</li>
+     *   <li><b>Pharmacist</b>: 药师视图 - 仅药师可见（含进货价等敏感信息）</li>
+     * </ul>
+     *
+     * <h3>使用示例</h3>
+     * <pre>
+     * {@code
+     * // 公共视图（基础信息）
+     * MedicineVO vo = VoConverter.toMedicineVO(medicine, MedicineViews.Public.class);
+     *
+     * // 医生视图（含详细信息）
+     * MedicineVO vo = VoConverter.toMedicineVO(medicine, MedicineViews.Doctor.class);
+     *
+     * // 药师视图（含敏感信息）
+     * MedicineVO vo = VoConverter.toMedicineVO(medicine, MedicineViews.Pharmacist.class);
+     * }
+     * </pre>
+     *
+     * @param medicine 药品实体
+     * @param viewClass JsonView类型（Public/Doctor/Pharmacist）
+     * @return MedicineVO
+     */
+    public static MedicineVO toMedicineVO(Medicine medicine, Class<?> viewClass) {
         if (medicine == null) {
             return null;
         }
 
-        return MedicineVO.builder()
+        // 创建基础Builder（Public视图字段）
+        // 注意：Medicine实体使用Short，但MedicineVO使用Integer（更好的JSON序列化兼容性）
+        MedicineVO.MedicineVOBuilder builder = MedicineVO.builder()
             .mainId(medicine.getMainId())
             .medicineCode(medicine.getMedicineCode())
             .name(medicine.getName())
             .genericName(medicine.getGenericName())
             .retailPrice(medicine.getRetailPrice())
             .stockQuantity(medicine.getStockQuantity())
-            .status(medicine.getStatus())
-            .specification(medicine.getSpecification())
-            .unit(medicine.getUnit())
-            .dosageForm(medicine.getDosageForm())
-            .manufacturer(medicine.getManufacturer())
             .category(medicine.getCategory())
-            .isPrescription(medicine.getIsPrescription())
-            .createdAt(medicine.getCreatedAt())
-            .updatedAt(medicine.getUpdatedAt())
-            .build();
+            .isPrescription(medicine.getIsPrescription() != null ? medicine.getIsPrescription().intValue() : null)
+            .status(medicine.getStatus() != null ? medicine.getStatus().intValue() : null);
+
+        // Doctor视图及以上：添加详细信息
+        if (viewClass != MedicineViews.Public.class) {
+            builder
+                .specification(medicine.getSpecification())
+                .unit(medicine.getUnit())
+                .dosageForm(medicine.getDosageForm())
+                .manufacturer(medicine.getManufacturer())
+                .stockStatus(computeStockStatus(medicine));
+        }
+
+        // Pharmacist视图：添加敏感信息
+        if (viewClass == MedicineViews.Pharmacist.class) {
+            builder
+                .purchasePrice(medicine.getPurchasePrice())
+                .minStock(medicine.getMinStock())
+                .maxStock(medicine.getMaxStock())
+                .storageCondition(medicine.getStorageCondition())
+                .approvalNo(medicine.getApprovalNo())
+                .expiryWarningDays(medicine.getExpiryWarningDays())
+                .profitMargin(computeProfitMargin(medicine))
+                .createdAt(medicine.getCreatedAt())
+                .updatedAt(medicine.getUpdatedAt());
+        }
+
+        return builder.build();
     }
 
     /**
@@ -194,83 +249,6 @@ public class VoConverter {
         vo.setCreatedAt(registration.getCreatedAt());
 
         return vo;
-    }
-
-    /**
-     * Medicine实体转DoctorMedicineVO（医生工作站）
-     * <p>
-     * 为医生工作站提供药品视图，不包含进货价等敏感商业信息。
-     * 自动计算库存状态（IN_STOCK/LOW_STOCK/OUT_OF_STOCK）。
-     * </p>
-     *
-     * @param medicine 药品实体
-     * @return DoctorMedicineVO
-     */
-    public static DoctorMedicineVO toDoctorMedicineVO(Medicine medicine) {
-        if (medicine == null) {
-            return null;
-        }
-
-        return DoctorMedicineVO.builder()
-            .mainId(medicine.getMainId())
-            .medicineCode(medicine.getMedicineCode())
-            .name(medicine.getName())
-            .genericName(medicine.getGenericName())
-            .retailPrice(medicine.getRetailPrice())
-            .stockQuantity(medicine.getStockQuantity())
-            .stockStatus(computeStockStatus(medicine))
-            .specification(medicine.getSpecification())
-            .unit(medicine.getUnit())
-            .dosageForm(medicine.getDosageForm())
-            .category(medicine.getCategory())
-            .isPrescription(medicine.getIsPrescription())
-            .manufacturer(medicine.getManufacturer())
-            .status(medicine.getStatus())
-            .build();
-    }
-
-    /**
-     * Medicine实体转PharmacistMedicineVO（药师工作站）
-     * <p>
-     * 为药师工作站提供完整的药品视图，包含进货价、库存阈值等管理信息。
-     * 自动计算库存状态和利润率。
-     * </p>
-     *
-     * @param medicine 药品实体
-     * @return PharmacistMedicineVO
-     */
-    public static PharmacistMedicineVO toPharmacistMedicineVO(Medicine medicine) {
-        if (medicine == null) {
-            return null;
-        }
-
-        return PharmacistMedicineVO.builder()
-            // 基础信息
-            .mainId(medicine.getMainId())
-            .medicineCode(medicine.getMedicineCode())
-            .name(medicine.getName())
-            .genericName(medicine.getGenericName())
-            .retailPrice(medicine.getRetailPrice())
-            .stockQuantity(medicine.getStockQuantity())
-            .stockStatus(computeStockStatus(medicine))
-            .specification(medicine.getSpecification())
-            .unit(medicine.getUnit())
-            .dosageForm(medicine.getDosageForm())
-            .category(medicine.getCategory())
-            .isPrescription(medicine.getIsPrescription())
-            .manufacturer(medicine.getManufacturer())
-            .status(medicine.getStatus())
-            // 药师专属信息
-            .purchasePrice(medicine.getPurchasePrice())
-            .minStock(medicine.getMinStock())
-            .maxStock(medicine.getMaxStock())
-            .storageCondition(medicine.getStorageCondition())
-            .approvalNo(medicine.getApprovalNo())
-            .expiryWarningDays(medicine.getExpiryWarningDays())
-            .profitMargin(computeProfitMargin(medicine))
-            .createdAt(medicine.getCreatedAt())
-            .updatedAt(medicine.getUpdatedAt())
-            .build();
     }
 
     /**
