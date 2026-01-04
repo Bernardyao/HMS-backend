@@ -1,20 +1,15 @@
 package com.his.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
 import com.his.service.ChargeService;
+import com.his.test.base.BaseControllerTest;
 import com.his.vo.ChargeVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -26,17 +21,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@DisplayName("收费控制器集成测试")
-class ChargeControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+@DisplayName("收费控制器测试")
+class ChargeControllerTest extends BaseControllerTest {
 
     @MockBean
     private ChargeService chargeService;

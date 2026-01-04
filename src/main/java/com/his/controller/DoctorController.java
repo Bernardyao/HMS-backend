@@ -20,17 +20,28 @@ import java.util.List;
 /**
  * 医生工作站控制器
  *
- * <p><b>安全设计：防止水平越权（IDOR）攻击</b>
+ * <p>为医生工作站提供候诊管理、接诊、患者信息查询等核心功能</p>
  *
- * <p>本控制器的所有接口默认使用 {@link SecurityUtils} 从 JWT Token 中获取当前医生的身份信息，
+ * <p><b>安全设计：防止水平越权（IDOR）攻击</b></p>
+ * <p>本控制器的所有接口默认使用 {@link com.his.common.SecurityUtils} 从 JWT Token 中获取当前医生的身份信息，
  * 而<b>不信任</b>前端传递的任何用户标识参数（如 doctorId）。这样可以防止攻击者通过修改请求参数
- * 来访问其他医生的数据。
+ * 来访问其他医生的数据。</p>
  *
- * <p><b>管理员特权：</b>
- * <p>如果当前用户是管理员（ADMIN），则允许通过参数指定要查看的医生数据，并拥有操作所有数据的权限。
+ * <p><b>管理员特权：</b></p>
+ * <p>如果当前用户是管理员（ADMIN），则允许通过参数指定要查看的医生数据，并拥有操作所有数据的权限。</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>候诊列表</b>：查询今日候诊患者（支持个人视图和科室视图）</li>
+ *   <li><b>接诊管理</b>：接诊、完成就诊等状态管理</li>
+ *   <li><b>患者信息</b>：查询患者详细信息（含数据脱敏）</li>
+ * </ul>
  *
  * @author HIS 开发团队
- * @see SecurityUtils
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.DoctorService
+ * @see com.his.common.SecurityUtils
  * @see com.his.common.JwtUtils
  */
 @Tag(name = "医生工作站", description = "医生工作站相关接口，包括候诊列表查询、接诊、完成就诊等操作")
@@ -42,6 +53,30 @@ import java.util.List;
 public class DoctorController {
 
     private final DoctorService doctorService;
+
+    // Swagger文档常量（避免PMD解析错误）
+    private static final String WAITING_LIST_DESC =
+        "<b>【安全特性】强制从JWT Token获取医生ID，防止水平越权（IDOR）攻击</b><br/>" +
+        "默认显示分配给当前医生的候诊患者（个人视图），设置showAll=true可查看整个科室的候诊患者（科室视图）。<br/>" +
+        "按排队号升序排列。<br/><br/>" +
+        "<b>【管理员特权】</b>管理员可通过 adminDoctorId 参数查看任意医生的候诊列表。<br/><br/>" +
+        "<b>响应示例：</b><br/>" +
+        "<pre>{\n" +
+        "  \"code\": 200,\n" +
+        "  \"message\": \"查询成功（个人视图），共3位候诊患者\",\n" +
+        "  \"data\": [\n" +
+        "    {\n" +
+        "      \"id\": 1,\n" +
+        "      \"regNo\": \"REG20231201001\",\n" +
+        "      \"patientName\": \"张三\",\n" +
+        "      \"queueNo\": \"A001\",\n" +
+        "      \"status\": 0,\n" +
+        "      \"statusDesc\": \"待就诊\"\n" +
+        "    }\n" +
+        "  ]\n" +
+        "}</pre>";
+
+    private static final String WAITING_LIST_SUMMARY = "查询今日候诊列表（支持个人/科室视图切换）";
 
     /**
      * 查询今日候诊列表（支持个人/科室视图）
@@ -56,26 +91,8 @@ public class DoctorController {
      * @return 候诊列表
      */
     @Operation(
-        summary = "查询今日候诊列表（支持个人/科室视图切换）", 
-        description = "<b>【安全特性】强制从JWT Token获取医生ID，防止水平越权（IDOR）攻击</b><br/>" +
-                      "默认显示分配给当前医生的候诊患者（个人视图），设置showAll=true可查看整个科室的候诊患者（科室视图）。<br/>" +
-                      "按排队号升序排列。<br/><br/>" +
-                      "<b>【管理员特权】</b>管理员可通过 adminDoctorId 参数查看任意医生的候诊列表。<br/><br/>" +
-                      "<b>响应示例：</b><br/>" +
-                      "<pre>{\n" +
-                      "  \"code\": 200,\n" +
-                      "  \"message\": \"查询成功（个人视图），共3位候诊患者\",\n" +
-                      "  \"data\": [\n" +
-                      "    {\n" +
-                      "      \"id\": 1,\n" +
-                      "      \"regNo\": \"REG20231201001\",\n" +
-                      "      \"patientName\": \"张三\",\n" +
-                      "      \"queueNo\": \"A001\",\n" +
-                      "      \"status\": 0,\n" +
-                      "      \"statusDesc\": \"待就诊\"\n" +
-                      "    }\n" +
-                      "  ]\n" +
-                      "}</pre>"
+        summary = WAITING_LIST_SUMMARY,
+        description = WAITING_LIST_DESC
     )
     @GetMapping("/waiting-list")
     public Result<List<RegistrationVO>> getWaitingList(

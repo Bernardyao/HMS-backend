@@ -70,7 +70,39 @@ public enum BusinessException {
     AUTH_TOKEN_INVALID(11000, "认证失败，请重新登录"),
     AUTH_TOKEN_EXPIRED(11001, "登录已过期，请重新登录"),
     AUTH_UNAUTHORIZED(11002, "未授权访问"),
-    AUTH_FORBIDDEN(11003, "无权访问");
+    AUTH_FORBIDDEN(11003, "无权访问"),
+
+    // 收费相关错误 12000-12999
+    CHARGE_NOT_FOUND(12000, "收费记录不存在"),
+    CHARGE_ALREADY_PAID(12001, "收费单已支付，请勿重复支付"),
+    CHARGE_ALREADY_REFUNDED(12002, "收费单已退费"),
+    CHARGE_STATUS_ERROR(12003, "收费单状态错误，无法执行此操作"),
+    CHARGE_AMOUNT_MISMATCH(12004, "支付金额与应收金额不一致"),
+    CHARGE_DUPLICATE_TRANSACTION(12005, "交易流水号已存在，请勿重复支付"),
+
+    // 挂号收费错误 12100-12199
+    CHARGE_REGISTRATION_NOT_FOUND(12100, "挂号记录不存在"),
+    CHARGE_REGISTRATION_STATUS_ERROR(12101, "挂号状态错误，无法收费"),
+    CHARGE_REGISTRATION_ALREADY_PAID(12102, "挂号费已支付，请勿重复收费"),
+    CHARGE_REGISTRATION_FEE_ZERO(12103, "挂号费金额必须大于0"),
+
+    // 处方收费错误 12200-12299
+    CHARGE_PRESCRIPTION_NOT_FOUND(12200, "处方记录不存在"),
+    CHARGE_PRESCRIPTION_STATUS_ERROR(12201, "处方状态错误，只有已审核的处方才能收费"),
+    CHARGE_PRESCRIPTION_ALREADY_PAID(12202, "处方费已支付，请勿重复收费"),
+    CHARGE_PRESCRIPTION_REGISTRATION_NOT_COMPLETED(12203, "挂号未完成就诊，无法收取处方费"),
+
+    // 退费错误 12300-12399
+    REFUND_CHARGE_NOT_PAID(12300, "只有已支付的收费单才能退费"),
+    REFUND_PRESCRIPTION_ALREADY_DISPENSED(12301, "处方已发药，无法退费"),
+    REFUND_AMOUNT_ERROR(12302, "退费金额错误"),
+
+    // 数据库约束违例错误 12400-12499
+    CONSTRAINT_VIOLATION(12400, "数据完整性约束违例"),
+    DUPLICATE_REGISTRATION(12401, "患者当天已挂该医生号，请勿重复挂号"),
+    DUPLICATE_TRANSACTION_NO(12402, "交易号已存在，请勿重复提交"),
+    FOREIGN_KEY_VIOLATION(12403, "关联数据不存在"),
+    NOT_NULL_VIOLATION(12404, "必填字段不能为空");
 
     private final int code;
     private final String message;

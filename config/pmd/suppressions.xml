@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<suppressions>
+    <!-- 排除测试类 -->
+    <suppress files=".*[\/]test[\/].*" checks=".*"/>
+</suppressions>

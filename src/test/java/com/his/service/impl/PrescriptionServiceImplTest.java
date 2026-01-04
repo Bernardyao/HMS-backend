@@ -5,13 +5,11 @@ import com.his.entity.Prescription;
 import com.his.entity.PrescriptionDetail;
 import com.his.enums.PrescriptionStatusEnum;
 import com.his.repository.*;
+import com.his.test.base.BaseServiceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -19,9 +17,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-@ActiveProfiles("unit-test")
-class PrescriptionServiceImplTest {
+@DisplayName("处方服务测试")
+class PrescriptionServiceImplTest extends BaseServiceTest {
 
     @Mock
     private PrescriptionRepository prescriptionRepository;
@@ -70,7 +67,8 @@ class PrescriptionServiceImplTest {
         
         prescription.setDetails(Collections.singletonList(detail));
 
-        when(prescriptionRepository.findById(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(prescriptionId, (short) 0))
+                .thenReturn(Collections.singletonList(detail));
         when(medicineRepository.findById(10L)).thenReturn(Optional.of(medicine));
 
         // 调用新方法

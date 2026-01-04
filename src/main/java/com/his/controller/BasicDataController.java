@@ -16,7 +16,30 @@ import java.util.List;
 
 /**
  * 公共数据接口控制器（用于各工作站）
- * 权限：所有已认证用户可访问
+ *
+ * <p>为各工作站提供科室、医生等基础数据查询功能</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>科室查询</b>：查询所有启用的科室列表</li>
+ *   <li><b>医生查询</b>：根据科室ID查询该科室的所有医生</li>
+ *   <li><b>数据筛选</b>：只返回启用且未删除的数据</li>
+ * </ul>
+ *
+ * <h3>使用场景</h3>
+ * <ul>
+ *   <li><b>挂号界面</b>：科室选择器、医生选择器</li>
+ *   <li><b>医生工作站</b>：科室切换</li>
+ *   <li><b>护士工作站</b>：分配医生</li>
+ * </ul>
+ *
+ * <h3>角色权限</h3>
+ * <p>本控制器所有接口需要已认证用户（isAuthenticated()）</p>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.BasicDataService
  */
 @Slf4j
 @RestController

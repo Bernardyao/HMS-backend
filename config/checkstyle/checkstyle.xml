@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+
+    <module name="TreeWalker">
+        <!-- 命名规范 -->
+        <module name="ConstantName"/>
+        <module name="LocalFinalVariableName"/>
+        <module name="LocalVariableName"/>
+        <module name="MemberName"/>
+        <!-- MethodName 已禁用：Repository 方法使用下划线映射数据库列（如 findByPatient_MainId） -->
+        <!-- <module name="MethodName"/> -->
+        <module name="PackageName"/>
+        <module name="ParameterName"/>
+        <module name="StaticVariableName"/>
+        <module name="TypeName"/>
+
+        <!-- 导入检查 -->
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+
+        <!-- 代码风格 -->
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+        <module name="NeedBraces"/>
+        <module name="EmptyBlock"/>
+    </module>
+
+    <!-- 排除 Repository 接口的方法名检查（允许下划线） -->
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*[\\/]Repository\.java$"/>
+    </module>
+</module>

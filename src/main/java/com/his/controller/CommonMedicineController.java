@@ -19,7 +19,30 @@ import java.util.stream.Collectors;
 
 /**
  * 公共接口-药品搜索控制器
- * 权限：所有已认证用户可访问
+ *
+ * <p>为各工作站提供药品搜索和查询功能</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>药品搜索</b>：根据药品名称或编码进行模糊搜索</li>
+ *   <li><b>药品详情</b>：根据药品ID查询详细信息</li>
+ *   <li><b>启用药品</b>：查询所有启用的药品</li>
+ * </ul>
+ *
+ * <h3>使用场景</h3>
+ * <ul>
+ *   <li><b>医生工作站</b>：开具处方时搜索药品</li>
+ *   <li><b>药师工作站</b>：查询药品库存和价格</li>
+ *   <li><b>收费管理</b>：查询药品价格</li>
+ * </ul>
+ *
+ * <h3>角色权限</h3>
+ * <p>本控制器所有接口需要已认证用户（isAuthenticated()）</p>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.MedicineService
  */
 @Tag(name = "公共接口-药品查询", description = "药品搜索和查询接口（医生、护士、药师共用）")
 @Slf4j

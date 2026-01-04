@@ -50,9 +50,18 @@ docs/*
 # Misc
 logs/
 GEMINI.md
+CLAUDE.md
 .github/*
+conductor/*
 
 # Backup files
 *.bak
 *.backup
 *.orig
+
+# Windows system files (null device and reserved names)
+nul
+CON
+PRN
+AUX
+CLOCK$

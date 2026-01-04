@@ -4,13 +4,12 @@ import com.his.common.Result;
 import com.his.controller.AuthController;
 import com.his.dto.LoginRequest;
 import com.his.service.AuthService;
+import com.his.test.base.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,13 +25,13 @@ import static org.mockito.Mockito.*;
  *
  * 这是一个真正的集成测试，启动完整的 Spring Context
  *
+ * <p>继承自BaseIntegrationTest，自动获得事务管理和数据清理</p>
+ *
  * @author HIS Development Team
  * @since 1.0.0
  */
-@SpringBootTest
-@ActiveProfiles("test")
 @DisplayName("日志框架集成测试")
-class LoggingFrameworkIntegrationTest {
+class LoggingFrameworkIntegrationTest extends BaseIntegrationTest {
 
     @Autowired(required = false)
     private AuthController authController;

@@ -26,6 +26,46 @@ import java.util.stream.Collectors;
 
 /**
  * 医生工作站服务实现类
+ *
+ * <p>为医生工作站提供核心业务功能，包括候诊管理、接诊流程、患者信息查询等</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li>候诊列表查询：支持个人视图（仅自己的患者）和科室视图（整个科室的患者）</li>
+ *   <li>接诊管理：接诊、完成就诊等状态管理</li>
+ *   <li>患者信息查询：查询患者详细信息和历史记录</li>
+ *   <li>数据脱敏：自动对患者敏感信息（身份证、手机号）进行脱敏处理</li>
+ *   <li>权限验证：防止水平越权（IDOR）攻击，确保医生只能操作自己的挂号</li>
+ * </ul>
+ *
+ * <h3>安全特性</h3>
+ * <ul>
+ *   <li>IDOR防御：验证医生身份，防止医生操作其他医生的挂号记录</li>
+ *   <li>数据脱敏：身份证号保留前3位和后4位，手机号保留前3位和后4位</li>
+ *   <li>防御性编程：完整的参数验证和业务状态检查</li>
+ * </ul>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>候诊列表仅显示今日、待就诊（WAITING）状态的挂号</li>
+ *   <li>按排队号升序排列（queueNo ASC）</li>
+ *   <li>接诊时只允许从 WAITING 状态更新为 COMPLETED 状态</li>
+ *   <li>只能操作今日的挂号记录</li>
+ *   <li>医生只能查询和操作自己的挂号记录（权限验证）</li>
+ * </ul>
+ *
+ * <h3>相关实体</h3>
+ * <ul>
+ *   <li>{@link com.his.entity.Doctor} - 医生信息</li>
+ *   <li>{@link com.his.entity.Registration} - 挂号单</li>
+ *   <li>{@link com.his.entity.Patient} - 患者信息</li>
+ *   <li>{@link com.his.entity.Department} - 科室信息</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.DoctorService
  */
 @Slf4j
 @Service
@@ -39,13 +79,37 @@ public class DoctorServiceImpl implements DoctorService {
 
     /**
      * 获取今日候诊列表（支持个人/科室混合视图）
-     * 防御性编程: 完整的参数验证和业务状态检查
      *
-     * @param doctorId 医生ID（个人视图时使用）
-     * @param deptId 科室ID（科室视图时使用，或用于验证）
+     * <p>根据视图模式（个人视图或科室视图）查询候诊列表</p>
+     *
+     * <p><b>视图模式：</b></p>
+     * <ul>
+     *   <li>个人视图（showAllDept=false）：仅返回分配给当前医生的候诊患者</li>
+     *   <li>科室视图（showAllDept=true）：返回整个科室的所有候诊患者</li>
+     * </ul>
+     *
+     * <p><b>查询规则：</b></p>
+     * <ul>
+     *   <li>仅查询今日挂号记录</li>
+     *   <li>仅查询状态为 WAITING（待就诊）的挂号</li>
+     *   <li>按排队号升序排列（queueNo ASC）</li>
+     *   <li>自动过滤已删除的挂号记录</li>
+     * </ul>
+     *
+     * <p><b>防御性编程：</b></p>
+     * <ul>
+     *   <li>个人视图：验证医生ID存在且大于0</li>
+     *   <li>科室视图：验证科室ID存在且大于0，科室未被删除和停用</li>
+     * </ul>
+     *
+     * @param doctorId 医生ID（个人视图时使用，必填）
+     * @param deptId 科室ID（科室视图时使用，必填；个人视图时可选）
      * @param showAllDept 是否显示科室所有患者（true=科室视图，false=个人视图）
-     * @return 候诊列表
-     * @throws IllegalArgumentException 当参数无效或科室/医生不存在时
+     * @return 候诊列表（RegistrationVO），按排队号升序排列
+     * @throws IllegalArgumentException 当个人视图模式下医生ID为空或无效
+     * @throws IllegalArgumentException 当科室视图模式下科室ID为空或无效
+     * @throws IllegalArgumentException 当科室不存在、已被删除或已停用
+     * @since 1.0
      */
     @Override
     @Transactional(readOnly = true)

@@ -22,6 +22,24 @@ spring:
         order_inserts: true
         order_updates: true
 
+  # Flyway 数据库迁移配置
+  flyway:
+    # 启用Flyway
+    enabled: true
+    # 迁移脚本位置
+    locations: classpath:db/migration
+    # 数据库编码
+    encoding: UTF-8
+    # 迁移时是否校验
+    validate-on-migrate: true
+    # 基准版本（用于已有数据库的迁移）
+    baseline-on-migrate: true
+    baseline-version: 0
+    # 是否允许无序的迁移脚本
+    out-of-order: false
+    # 迁移脚本表名
+    table: flyway_schema_history
+
   # 文件上传配置
   servlet:
     multipart:
@@ -42,12 +60,52 @@ server:
       enabled: true
       force: true
 
-# Actuator 健康检查配置
+# Actuator 健康检查和监控配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+
+  # Prometheus端点配置
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+
+  # 指标配置
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+    tags:
+      application: ${spring.application.name:HIS}
+      environment: ${spring.profiles.active:default}
+
+    # 启用JVM指标
+    enable:
+      jvm: true
+      process: true
+      system: true
+
+    # 分布统计配置
+    distribution:
+      percentiles-histogram:
+        sequence.generation.duration: true
+        charge.creation.duration: true
+        charge.payment.duration: true
+      percentiles:
+        sequence.generation.duration: 0.5,0.95,0.99
+        charge.creation.duration: 0.5,0.95,0.99
+        charge.payment.duration: 0.5,0.95,0.99
+      slo:
+        sequence.generation.duration: 10ms,50ms,100ms
+        charge.creation.duration: 100ms,500ms,1000ms
 
 # JWT 配置
 jwt:
@@ -104,3 +162,30 @@ knife4j:
     enable: false
     username: admin
     password: admin123
+
+# ============================================================
+# 监控配置
+# ============================================================
+monitoring:
+  alert:
+    # 邮件告警配置
+    email:
+      # 是否启用邮件告警（生产环境建议启用）
+      enabled: false
+      # 告警接收邮箱（多个邮箱用逗号分隔）
+      to: admin@example.com,ops@example.com
+    # 错误告警阈值配置
+    error:
+      # 每达到多少个错误触发一次告警（默认：100）
+      threshold: 100
+
+# ============================================================
+# 审计日志配置
+# ============================================================
+audit:
+  log:
+    # 审计日志保留期限（单位：天）
+    # 默认180天（6个月），满足HIPAA和等保三级基本要求
+    # 如需长期保留（如6年），请调整此值并配合定期归档
+    retention:
+      days: 180

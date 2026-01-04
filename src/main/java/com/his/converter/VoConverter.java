@@ -9,7 +9,12 @@ import com.his.vo.MedicineVO;
 import com.his.vo.PrescriptionVO;
 import com.his.vo.MedicalRecordVO;
 import com.his.vo.RegistrationVO;
+import com.his.vo.DoctorMedicineVO;
+import com.his.vo.PharmacistMedicineVO;
 import lombok.extern.slf4j.Slf4j;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * VO转换工具类
@@ -189,5 +194,136 @@ public class VoConverter {
         vo.setCreatedAt(registration.getCreatedAt());
 
         return vo;
+    }
+
+    /**
+     * Medicine实体转DoctorMedicineVO（医生工作站）
+     * <p>
+     * 为医生工作站提供药品视图，不包含进货价等敏感商业信息。
+     * 自动计算库存状态（IN_STOCK/LOW_STOCK/OUT_OF_STOCK）。
+     * </p>
+     *
+     * @param medicine 药品实体
+     * @return DoctorMedicineVO
+     */
+    public static DoctorMedicineVO toDoctorMedicineVO(Medicine medicine) {
+        if (medicine == null) {
+            return null;
+        }
+
+        return DoctorMedicineVO.builder()
+            .mainId(medicine.getMainId())
+            .medicineCode(medicine.getMedicineCode())
+            .name(medicine.getName())
+            .genericName(medicine.getGenericName())
+            .retailPrice(medicine.getRetailPrice())
+            .stockQuantity(medicine.getStockQuantity())
+            .stockStatus(computeStockStatus(medicine))
+            .specification(medicine.getSpecification())
+            .unit(medicine.getUnit())
+            .dosageForm(medicine.getDosageForm())
+            .category(medicine.getCategory())
+            .isPrescription(medicine.getIsPrescription())
+            .manufacturer(medicine.getManufacturer())
+            .status(medicine.getStatus())
+            .build();
+    }
+
+    /**
+     * Medicine实体转PharmacistMedicineVO（药师工作站）
+     * <p>
+     * 为药师工作站提供完整的药品视图，包含进货价、库存阈值等管理信息。
+     * 自动计算库存状态和利润率。
+     * </p>
+     *
+     * @param medicine 药品实体
+     * @return PharmacistMedicineVO
+     */
+    public static PharmacistMedicineVO toPharmacistMedicineVO(Medicine medicine) {
+        if (medicine == null) {
+            return null;
+        }
+
+        return PharmacistMedicineVO.builder()
+            // 基础信息
+            .mainId(medicine.getMainId())
+            .medicineCode(medicine.getMedicineCode())
+            .name(medicine.getName())
+            .genericName(medicine.getGenericName())
+            .retailPrice(medicine.getRetailPrice())
+            .stockQuantity(medicine.getStockQuantity())
+            .stockStatus(computeStockStatus(medicine))
+            .specification(medicine.getSpecification())
+            .unit(medicine.getUnit())
+            .dosageForm(medicine.getDosageForm())
+            .category(medicine.getCategory())
+            .isPrescription(medicine.getIsPrescription())
+            .manufacturer(medicine.getManufacturer())
+            .status(medicine.getStatus())
+            // 药师专属信息
+            .purchasePrice(medicine.getPurchasePrice())
+            .minStock(medicine.getMinStock())
+            .maxStock(medicine.getMaxStock())
+            .storageCondition(medicine.getStorageCondition())
+            .approvalNo(medicine.getApprovalNo())
+            .expiryWarningDays(medicine.getExpiryWarningDays())
+            .profitMargin(computeProfitMargin(medicine))
+            .createdAt(medicine.getCreatedAt())
+            .updatedAt(medicine.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * 计算库存状态
+     * <p>
+     * 库存状态判断规则：
+     * <ul>
+     *   <li>OUT_OF_STOCK: 库存 = 0（缺货）</li>
+     *   <li>LOW_STOCK: 库存 <= 最低库存（低库存）</li>
+     *   <li>IN_STOCK: 库存 > 最低库存（正常）</li>
+     * </ul>
+     * </p>
+     *
+     * @param medicine 药品实体
+     * @return 库存状态字符串
+     */
+    private static String computeStockStatus(Medicine medicine) {
+        if (medicine.getStockQuantity() == null) {
+            return "OUT_OF_STOCK";
+        }
+
+        if (medicine.getStockQuantity() == 0) {
+            return "OUT_OF_STOCK";
+        } else if (medicine.getMinStock() != null &&
+                   medicine.getStockQuantity() <= medicine.getMinStock()) {
+            return "LOW_STOCK";
+        } else {
+            return "IN_STOCK";
+        }
+    }
+
+    /**
+     * 计算利润率
+     * <p>
+     * 利润率计算公式：
+     * <pre>
+     * 利润率 = ((零售价 - 进货价) / 进货价) × 100%
+     * </pre>
+     * 如果进货价为null或0，则返回0。
+     * </p>
+     *
+     * @param medicine 药品实体
+     * @return 利润率（百分比），保留2位小数
+     */
+    private static BigDecimal computeProfitMargin(Medicine medicine) {
+        if (medicine.getPurchasePrice() == null ||
+            medicine.getPurchasePrice().compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return medicine.getRetailPrice()
+            .subtract(medicine.getPurchasePrice())
+            .multiply(new BigDecimal("100"))
+            .divide(medicine.getPurchasePrice(), 2, RoundingMode.HALF_UP);
     }
 }

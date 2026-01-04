@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 收费服务接口
@@ -72,4 +74,46 @@ public interface ChargeService {
      * @return 结算报表
      */
     com.his.vo.DailySettlementVO getDailySettlement(LocalDate date);
+
+    // ========== 分阶段收费新增方法 ==========
+
+    /**
+     * 创建挂号收费单（仅挂号费，独立收费）
+     * 前置条件：
+     * 1. 挂号单状态必须为 WAITING 或 PAID_REGISTRATION
+     * 2. 该挂号单未存在已支付的挂号收费记录
+     *
+     * @param registrationId 挂号单ID
+     * @return 挂号收费单信息
+     */
+    ChargeVO createRegistrationCharge(Long registrationId);
+
+    /**
+     * 创建处方收费单（仅处方费，独立收费）
+     * 前置条件：
+     * 1. 挂号单状态必须为 COMPLETED
+     * 2. 处方状态必须为 REVIEWED
+     * 3. 该处方的处方费未支付
+     *
+     * @param registrationId 挂号单ID
+     * @param prescriptionIds 处方ID列表
+     * @return 处方收费单信息
+     */
+    ChargeVO createPrescriptionCharge(Long registrationId, List<Long> prescriptionIds);
+
+    /**
+     * 检查挂号费是否已支付
+     *
+     * @param registrationId 挂号单ID
+     * @return true=已支付, false=未支付
+     */
+    boolean isRegistrationFeePaid(Long registrationId);
+
+    /**
+     * 获取挂号单的所有收费记录（按类型分组）
+     *
+     * @param registrationId 挂号单ID
+     * @return Map<收费类型, 收费单列表>，键：registration/prescription/combined
+     */
+    Map<String, List<ChargeVO>> getChargesByType(Long registrationId);
 }

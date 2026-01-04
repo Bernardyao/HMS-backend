@@ -14,15 +14,12 @@ import com.his.repository.PatientRepository;
 import com.his.repository.PrescriptionDetailRepository;
 import com.his.repository.PrescriptionRepository;
 import com.his.repository.RegistrationRepository;
+import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -37,15 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 医生工作站控制器集成测试
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
 @DisplayName("医生工作站集成测试")
-class DoctorControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class DoctorControllerTest extends BaseControllerTest {
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -79,7 +70,7 @@ class DoctorControllerTest {
     private Long testReg3Id;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         // 防御性编程: 按外键约束顺序清理测试数据(从叶子节点到根节点)
         // 完整的依赖链:
         // Charge -> Patient, Registration

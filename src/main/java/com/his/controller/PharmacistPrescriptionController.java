@@ -4,6 +4,9 @@ import com.his.common.Result;
 import com.his.common.SecurityUtils;
 import com.his.converter.VoConverter;
 import com.his.entity.Prescription;
+import com.his.log.annotation.AuditLog;
+import com.his.log.annotation.AuditType;
+import com.his.log.utils.LogUtils;
 import com.his.service.PrescriptionService;
 import com.his.vo.PrescriptionVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,7 +21,32 @@ import java.util.List;
 
 /**
  * 药师工作站-处方管理控制器
- * 权限：药师和管理员
+ *
+ * <p>为药师工作站提供处方审核、发药、退药等核心功能</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>待发药列表</b>：查询所有已审核通过但未发药的处方</li>
+ *   <li><b>处方发药</b>：根据处方发药，扣减药品库存</li>
+ *   <li><b>处方退药</b>：处理退药申请，恢复药品库存</li>
+ *   <li><b>处方查询</b>：根据处方ID查询处方详情</li>
+ * </ul>
+ *
+ * <h3>角色权限</h3>
+ * <p>本控制器所有接口需要PHARMACIST（药师）或ADMIN（管理员）角色</p>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>只能发药已审核通过的处方</li>
+ *   <li>发药时验证库存是否充足</li>
+ *   <li>发药后自动扣减库存</li>
+ *   <li>退药时恢复库存</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.PrescriptionService
  */
 @Tag(name = "药师工作站-处方管理", description = "药师工作站的处方审核、发药等接口")
 @Slf4j
@@ -114,26 +142,32 @@ public class PharmacistPrescriptionController {
      */
     @Operation(summary = "发药", description = "根据处方ID进行发药操作，自动扣减库存")
     @PostMapping("/{id}/dispense")
+    @AuditLog(
+        module = "药房管理",
+        action = "发药",
+        description = "药师发药",
+        auditType = AuditType.BUSINESS
+    )
     public Result<String> dispense(
             @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable Long id) {
         try {
-            log.info("发药请求，处方ID: {}", id);
-            
+            LogUtils.logBusinessOperation("药房管理", "发药", "处方ID: " + id);
+
             // 获取当前登录用户ID作为发药人
             Long pharmacistId = SecurityUtils.getCurrentUserId();
-            
+
             prescriptionService.dispense(id, pharmacistId);
-            
+
             return Result.success("发药成功", "发药成功");
         } catch (IllegalArgumentException e) {
-            log.warn("发药参数错误: {}", e.getMessage());
+            LogUtils.logValidationError("发药", e.getMessage(), "处方ID: " + id);
             return Result.badRequest(e.getMessage());
         } catch (IllegalStateException e) {
-            log.warn("发药业务错误: {}", e.getMessage());
+            LogUtils.logValidationError("发药", e.getMessage(), "处方ID: " + id);
             return Result.error(e.getMessage());
         } catch (Exception e) {
-            log.error("发药失败", e);
+            LogUtils.logSystemError("药房管理", "发药失败", e);
             return Result.error("发药失败: " + e.getMessage());
         }
     }
@@ -147,25 +181,31 @@ public class PharmacistPrescriptionController {
      */
     @Operation(summary = "退药", description = "为已发药记录进行退药操作，自动归还库存")
     @PostMapping("/{id}/return")
+    @AuditLog(
+        module = "药房管理",
+        action = "退药",
+        description = "患者退药",
+        auditType = AuditType.SENSITIVE_OPERATION
+    )
     public Result<String> returnMedicine(
             @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable Long id,
             @Parameter(description = "退药原因", required = true, example = "患者要求退药")
             @RequestParam String reason) {
         try {
-            log.info("退药请求，处方ID: {}, 原因: {}", id, reason);
-            
+            LogUtils.logSensitiveOperation("退药", "处方", id);
+
             prescriptionService.returnMedicine(id, reason);
-            
+
             return Result.success("退药成功", null);
         } catch (IllegalArgumentException e) {
-            log.warn("退药参数错误: {}", e.getMessage());
+            LogUtils.logValidationError("退药", e.getMessage(), "处方ID: " + id);
             return Result.badRequest(e.getMessage());
         } catch (IllegalStateException e) {
-            log.warn("退药业务错误: {}", e.getMessage());
+            LogUtils.logValidationError("退药", e.getMessage(), "处方ID: " + id);
             return Result.error(e.getMessage());
         } catch (Exception e) {
-            log.error("退药失败", e);
+            LogUtils.logSystemError("药房管理", "退药失败", e);
             return Result.error("退药失败: " + e.getMessage());
         }
     }

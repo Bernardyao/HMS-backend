@@ -23,7 +23,17 @@ public enum RegStatusEnum {
     /**
      * 已退费
      */
-    REFUNDED((short) 3, "已退费");
+    REFUNDED((short) 3, "已退费"),
+
+    /**
+     * 已缴挂号费（挂号费已支付，等待就诊）
+     */
+    PAID_REGISTRATION((short) 4, "已缴挂号费"),
+
+    /**
+     * 就诊中（正在就诊，尚未完成）
+     */
+    IN_CONSULTATION((short) 5, "就诊中");
 
     private final Short code;
     private final String description;

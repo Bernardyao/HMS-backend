@@ -1,0 +1,62 @@
+# ============================================================
+# Test Environment Configuration (统一测试配置)
+# ============================================================
+# 适用于所有测试类型（单元测试、集成测试）
+# 使用真实PostgreSQL测试数据库
+
+server:
+  port: 8081  # 避免与主应用端口冲突
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/his_project_test
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 5
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+      pool-name: HisTestPool
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none  # 完全由Flyway管理
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        generate_statistics: false
+        jdbc:
+          batch_size: 20
+          order_inserts: true
+          order_updates: true
+
+  # Flyway 配置 - 测试环境启用（执行 V1-V5 创建表结构）
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    clean-disabled: false  # 测试环境允许清理
+    validate-on-migrate: true
+    out-of-order: true  # 允许开发时乱序迁移
+
+  # 禁用Spring Security（除非专门测试安全功能）
+  security:
+    filter:
+      order: 10
+
+# 日志配置
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.his: DEBUG
+    org.hibernate.SQL: WARN
+    org.springframework.test: INFO
+    org.flywaydb: INFO

@@ -5,11 +5,10 @@ import com.his.entity.Registration;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.DepartmentRepository;
 import com.his.repository.RegistrationRepository;
+import com.his.test.base.BaseServiceTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -19,8 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-class DoctorServiceImplTest {
+class DoctorServiceImplTest extends BaseServiceTest {
 
     @Mock
     private RegistrationRepository registrationRepository;

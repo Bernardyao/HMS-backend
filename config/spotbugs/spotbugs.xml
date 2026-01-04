@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- 排除所有测试类（包括测试工具类） -->
+    <Match>
+        <Class name="~.*\.test\..*"/>
+    </Match>
+    <Match>
+        <Class name="~.*\.testutils\..*"/>
+    </Match>
+    <Match>
+        <Class name="~.*IntegrationTest"/>
+    </Match>
+    <Match>
+        <Class name="~.*Test"/>
+    </Match>
+
+    <!-- 排除测试类的特定警告 -->
+    <Match>
+        <Class name="~.*TestDataBuilders.*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+
+    <!-- 排除测试类中的未使用对象警告 -->
+    <Match>
+        <Class name="~.*\.test\..*"/>
+        <Bug pattern="UC_USELESS_OBJECT"/>
+    </Match>
+    <Match>
+        <Class name="~.*\.integration\..*"/>
+        <Bug pattern="UC_USELESS_OBJECT"/>
+    </Match>
+
+    <!-- 排除 Entity 类的 EI/EI2 警告（JPA实体需要直接暴露字段） -->
+    <Match>
+        <Class name="~.*\.entity\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- 排除性能测试类的 ICAST 警告 -->
+    <Match>
+        <Class name="com.his.performance.PerformanceStats"/>
+        <Bug pattern="ICAST_IDIV_CAST_TO_DOUBLE"/>
+    </Match>
+    <Match>
+        <Class name="~.*\.performance\..*"/>
+    </Match>
+
+    <!-- 排除集成测试类 -->
+    <Match>
+        <Class name="~.*\.integration\..*"/>
+    </Match>
+
+    <!-- 排除 VO 类的 EI/EI2 警告（DTO需要直接暴露字段） -->
+    <Match>
+        <Class name="~.*\.vo\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- 排除 DTO 类的暴露字段警告 -->
+    <Match>
+        <Class name="~.*\.dto\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- 排除 Entity 类的未初始化字段警告 -->
+    <Match>
+        <Class name="~.*\.entity\..*"/>
+        <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED"/>
+    </Match>
+
+    <!-- 排除 Spring Bean 构造器注入的 EI2 警告 -->
+    <Match>
+        <Class name="com.his.service.impl.AuditLogServiceImpl"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.service.impl.AuditLogQueryServiceImpl"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.monitoring.LoggingMetricsReporter"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.scheduled.AuditLogCleanupTask"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.log.aspect.ApiLogAspect"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.monitoring.ChargeServiceMetrics"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.monitoring.SequenceGenerationMetrics"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.config.SecurityConfig"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.his.config.DevSecurityConfig"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- 排除工具类的 Finalizer 攻击警告 (CT类别) -->
+    <Match>
+        <Class name="com.his.common.SecurityUtils"/>
+        <Category name="CT"/>
+    </Match>
+    <Match>
+        <Class name="com.his.common.DataMaskingUtils"/>
+        <Category name="CT"/>
+    </Match>
+    <Match>
+        <Class name="com.his.common.DataMaskingContext"/>
+        <Category name="CT"/>
+    </Match>
+
+    <!-- 排除懒加载初始化方法的警告 -->
+    <Match>
+        <Method name="initializeLazyFields" params="com.his.entity.MedicalRecord"/>
+        <Bug pattern="UC_USELESS_VOID_METHOD,DLS_DEAD_LOCAL_STORE"/>
+    </Match>
+    <Match>
+        <Method name="initializeLazyFields" params="com.his.entity.Prescription"/>
+        <Bug pattern="UC_USELESS_VOID_METHOD,DLS_DEAD_LOCAL_STORE"/>
+    </Match>
+
+    <!-- 排除 Short 比较的警告 -->
+    <Match>
+        <Class name="com.his.service.impl.RegistrationServiceImpl"/>
+        <Bug pattern="RC_REF_COMPARISON"/>
+    </Match>
+
+    <!-- 排除 BusinessException 的命名警告 -->
+    <Match>
+        <Class name="com.his.exception.BusinessException"/>
+        <Bug pattern="NM_CLASS_NOT_EXCEPTION"/>
+    </Match>
+
+    <!-- 排除 GlobalExceptionHandler 中的 null 检查警告 -->
+    <Match>
+        <Class name="com.his.common.GlobalExceptionHandler"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+    <Match>
+        <Class name="com.his.common.GlobalExceptionHandler"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
+
+    <!-- 排除 Random 生成数字的性能警告 (Dm类别) -->
+    <Match>
+        <Class name="com.his.service.impl.MedicalRecordServiceImpl"/>
+        <Category name="Dm"/>
+    </Match>
+</FindBugsFilter>

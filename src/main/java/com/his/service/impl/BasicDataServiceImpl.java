@@ -17,7 +17,36 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 基础数据服务实现
+ * 基础数据服务实现类
+ *
+ * <p>提供系统基础数据的查询服务，主要用于前端下拉框、选择器等UI组件</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li>科室列表查询：查询所有启用的科室信息</li>
+ *   <li>医生列表查询：根据科室查询该科室下所有启用的医生</li>
+ *   <li>数据脱敏：仅返回基础信息，不包含敏感数据</li>
+ * </ul>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>仅查询启用的科室（status=1）且未删除（isDeleted=0）</li>
+ *   <li>仅查询启用的医生（status=1）且未删除（isDeleted=0）</li>
+ *   <li>科室列表按排序字段（sortOrder）排序</li>
+ *   <li>医生列表按科室分组</li>
+ * </ul>
+ *
+ * <h3>使用场景</h3>
+ * <ul>
+ *   <li>挂号页面：科室和医生下拉框数据源</li>
+ *   <li>医生工作站：科室选择器</li>
+ *   <li>数据统计：基础信息查询</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.BasicDataService
  */
 @Slf4j
 @Service
@@ -29,6 +58,22 @@ public class BasicDataServiceImpl implements BasicDataService {
 
     /**
      * 获取所有启用的科室列表
+     *
+     * <p>查询所有启用且未删除的科室，返回基础信息</p>
+     *
+     * <p><b>查询条件：</b></p>
+     * <ul>
+     *   <li>科室状态为启用（status=1）</li>
+     *   <li>科室未删除（isDeleted=0）</li>
+     * </ul>
+     *
+     * <p><b>排序规则：</b></p>
+     * <ul>
+     *   <li>按排序字段（sortOrder）升序排列</li>
+     * </ul>
+     *
+     * @return 科室基础信息列表（DepartmentBasicVO）
+     * @since 1.0
      */
     @Override
     @Transactional(readOnly = true)
@@ -48,6 +93,20 @@ public class BasicDataServiceImpl implements BasicDataService {
 
     /**
      * 根据科室ID获取该科室下所有启用的医生列表
+     *
+     * <p>查询指定科室下所有启用且未删除的医生</p>
+     *
+     * <p><b>查询条件：</b></p>
+     * <ul>
+     *   <li>医生属于指定科室</li>
+     *   <li>医生状态为启用（status=1）</li>
+     *   <li>医生未删除（isDeleted=0）</li>
+     * </ul>
+     *
+     * @param deptId 科室ID
+     * @return 医生基础信息列表（DoctorBasicVO）
+     * @throws IllegalArgumentException 如果科室不存在
+     * @since 1.0
      */
     @Override
     @Transactional(readOnly = true)

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+    <!-- 排除生成的代码 -->
+    <suppress checks=".*" files=".*[\/]generated[\/].*"/>
+
+    <!-- 允许 Java 标准库和常见框架的星号导入（这是行业最佳实践） -->
+    <suppress checks="AvoidStarImport" files=".*"/>
+
+    <!-- 排除 Repository 接口中的方法名检查（允许使用下划线，如 findByPatient_MainId） -->
+    <suppress checks="MethodName" files=".*[/\\]repository[/\\].*Repository\.java"/>
+</suppressions>

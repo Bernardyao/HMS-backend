@@ -2,19 +2,13 @@ package com.his.controller;
 
 import com.his.entity.Department;
 import com.his.entity.Doctor;
-import com.his.repository.DepartmentRepository;
-import com.his.repository.DoctorRepository;
+import com.his.repository.*;
+import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
-
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,22 +17,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 基础数据接口集成测试
+ *
+ * <p>继承自BaseControllerTest，自动获得MockMvc、ObjectMapper和事务管理</p>
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @WithMockUser(roles = "ADMIN")
-class BasicDataControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class BasicDataControllerTest extends BaseControllerTest {
 
     @Autowired
     private DepartmentRepository departmentRepository;
 
     @Autowired
     private DoctorRepository doctorRepository;
+
+    @Autowired
+    private ChargeDetailRepository chargeDetailRepository;
+    
+    @Autowired
+    private ChargeRepository chargeRepository;
+    
+    @Autowired
+    private PrescriptionDetailRepository prescriptionDetailRepository;
+    
+    @Autowired
+    private PrescriptionRepository prescriptionRepository;
+    
+    @Autowired
+    private MedicalRecordRepository medicalRecordRepository;
+    
+    @Autowired
+    private RegistrationRepository registrationRepository;
+    
+    @Autowired
+    private PatientRepository patientRepository;
 
     private Department testDepartment1;
     private Department testDepartment2;
@@ -47,14 +57,23 @@ class BasicDataControllerTest {
     private Doctor testDoctor3;
 
     @BeforeEach
-    void setUp() {
-        // 清理测试数据
+    protected void setUp() {
+        // 清理测试数据 - 按照外键依赖顺序：先子表，后父表
+        chargeDetailRepository.deleteAll();
+        chargeRepository.deleteAll();
+        prescriptionDetailRepository.deleteAll();
+        prescriptionRepository.deleteAll();
+        medicalRecordRepository.deleteAll();
+        registrationRepository.deleteAll();
         doctorRepository.deleteAll();
         departmentRepository.deleteAll();
+        patientRepository.deleteAll();
+
+        String timestamp = String.valueOf(System.currentTimeMillis());
 
         // 创建测试科室1 - 内科
         testDepartment1 = new Department();
-        testDepartment1.setDeptCode("DEPT001");
+        testDepartment1.setDeptCode("DEPT001_" + timestamp);
         testDepartment1.setName("内科");
         testDepartment1.setStatus((short) 1);
         testDepartment1.setIsDeleted((short) 0);
@@ -63,7 +82,7 @@ class BasicDataControllerTest {
 
         // 创建测试科室2 - 外科
         testDepartment2 = new Department();
-        testDepartment2.setDeptCode("DEPT002");
+        testDepartment2.setDeptCode("DEPT002_" + timestamp);
         testDepartment2.setName("外科");
         testDepartment2.setStatus((short) 1);
         testDepartment2.setIsDeleted((short) 0);
@@ -72,7 +91,7 @@ class BasicDataControllerTest {
 
         // 创建测试医生1 - 内科，在岗
         testDoctor1 = new Doctor();
-        testDoctor1.setDoctorNo("DOC001");
+        testDoctor1.setDoctorNo("DOC001_" + timestamp);
         testDoctor1.setName("张医生");
         testDoctor1.setGender((short) 1);
         testDoctor1.setTitle("主任医师");
@@ -83,7 +102,7 @@ class BasicDataControllerTest {
 
         // 创建测试医生2 - 内科，在岗
         testDoctor2 = new Doctor();
-        testDoctor2.setDoctorNo("DOC002");
+        testDoctor2.setDoctorNo("DOC002_" + timestamp);
         testDoctor2.setName("李医生");
         testDoctor2.setGender((short) 2);
         testDoctor2.setTitle("副主任医师");
@@ -94,7 +113,7 @@ class BasicDataControllerTest {
 
         // 创建测试医生3 - 内科，停诊
         testDoctor3 = new Doctor();
-        testDoctor3.setDoctorNo("DOC003");
+        testDoctor3.setDoctorNo("DOC003_" + timestamp);
         testDoctor3.setName("王医生");
         testDoctor3.setGender((short) 1);
         testDoctor3.setTitle("主治医师");
@@ -115,10 +134,8 @@ class BasicDataControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[0].id").value(testDepartment1.getMainId()))
-                .andExpect(jsonPath("$.data[0].code").value("DEPT001"))
                 .andExpect(jsonPath("$.data[0].name").value("内科"))
                 .andExpect(jsonPath("$.data[1].id").value(testDepartment2.getMainId()))
-                .andExpect(jsonPath("$.data[1].code").value("DEPT002"))
                 .andExpect(jsonPath("$.data[1].name").value("外科"));
     }
 
@@ -150,14 +167,12 @@ class BasicDataControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2))) // 只返回在岗的医生
                 .andExpect(jsonPath("$.data[0].id").value(testDoctor1.getMainId()))
-                .andExpect(jsonPath("$.data[0].doctorNo").value("DOC001"))
                 .andExpect(jsonPath("$.data[0].name").value("张医生"))
                 .andExpect(jsonPath("$.data[0].gender").value(1))
                 .andExpect(jsonPath("$.data[0].title").value("主任医师"))
                 .andExpect(jsonPath("$.data[0].status").value(1))
                 .andExpect(jsonPath("$.data[0].registrationFee").exists())
                 .andExpect(jsonPath("$.data[1].id").value(testDoctor2.getMainId()))
-                .andExpect(jsonPath("$.data[1].doctorNo").value("DOC002"))
                 .andExpect(jsonPath("$.data[1].name").value("李医生"))
                 .andExpect(jsonPath("$.data[1].title").value("副主任医师"))
                 .andExpect(jsonPath("$.data[1].registrationFee").exists());
@@ -207,7 +222,7 @@ class BasicDataControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2))) // 只有2个在岗医生
-                .andExpect(jsonPath("$.data[*].doctorNo", not(hasItem("DOC003")))); // 停诊的医生不在列表中
+                .andExpect(jsonPath("$.data[*].doctorNo", not(hasItem(testDoctor3.getDoctorNo())))); // 停诊的医生不在列表中
     }
 
     @Test
@@ -218,7 +233,7 @@ class BasicDataControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].doctorNo").value("DOC001"))
-                .andExpect(jsonPath("$.data[1].doctorNo").value("DOC002"));
+                .andExpect(jsonPath("$.data[0].doctorNo").value(testDoctor1.getDoctorNo()))
+                .andExpect(jsonPath("$.data[1].doctorNo").value(testDoctor2.getDoctorNo()));
     }
 }

@@ -1,22 +1,18 @@
 package com.his.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.his.dto.RegistrationDTO;
 import com.his.entity.Department;
 import com.his.entity.Doctor;
 import com.his.repository.DepartmentRepository;
 import com.his.repository.DoctorRepository;
 import com.his.repository.PatientRepository;
+import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -29,19 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 挂号控制器集成测试
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
 @DisplayName("挂号控制器集成测试")
 @WithMockUser(roles = "NURSE")
-class RegistrationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class RegistrationControllerTest extends BaseControllerTest {
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -56,7 +43,7 @@ class RegistrationControllerTest {
     private Long testDoctorId;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         // 准备测试数据
         Department department = new Department();
         department.setDeptCode("D001");

@@ -110,4 +110,16 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
      */
     List<Registration> findByDoctor_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
             Long doctorId, LocalDate visitDate, Short status, Short isDeleted);
+
+    // ========== 编号生成方法 - 使用数据库序列保证线程安全 ==========
+
+    /**
+     * 通过数据库原生函数生成挂号流水号（线程安全）
+     *
+     * <p>使用PostgreSQL序列保证唯一性，格式：R + yyyyMMdd + 4位序列</p>
+     *
+     * @return 唯一的挂号流水号
+     */
+    @Query(value = "SELECT generate_reg_no()", nativeQuery = true)
+    String generateRegNo();
 }

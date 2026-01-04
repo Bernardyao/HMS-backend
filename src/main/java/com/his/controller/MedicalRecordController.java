@@ -16,7 +16,31 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 病历管理控制器（医生工作站）
- * 权限：医生和管理员
+ *
+ * <p>负责电子病历的创建、更新、查询、提交等全生命周期管理</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>保存或更新病历</b>：根据挂号单ID创建新病历或更新已有病历</li>
+ *   <li><b>查询病历</b>：根据病历ID或挂号单ID查询病历详情</li>
+ *   <li><b>提交病历</b>：将草稿状态的病历提交为正式病历</li>
+ * </ul>
+ *
+ * <h3>角色权限</h3>
+ * <p>本控制器所有接口需要DOCTOR（医生）或ADMIN（管理员）角色</p>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>病历必须关联有效的挂号单</li>
+ *   <li>已提交的病历不能修改</li>
+ *   <li>每个挂号单只能有一条有效病历</li>
+ *   <li>病历编号自动生成</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.MedicalRecordService
  */
 @Tag(name = "医生工作站-病历管理", description = "医生工作站的电子病历相关接口")
 @Slf4j

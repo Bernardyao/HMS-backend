@@ -1,7 +1,10 @@
 package com.his.log.aspect;
 
+import com.his.entity.AuditLogEntity;
 import com.his.log.annotation.AuditLog;
 import com.his.log.utils.LogUtils;
+import com.his.service.AuditLogService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -37,8 +40,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 @Order(20)  // 在 ApiLogAspect 之后执行
 public class AuditLogAspect {
+
+    private final AuditLogService auditLogService;
 
     /**
      * 拦截所有标记了 @AuditLog 的方法
@@ -106,6 +112,9 @@ public class AuditLogAspect {
                     String.format("类型: %s, 耗时: %dms", auditLog.auditType().getDescription(), executionTime) :
                     auditLog.description()
         );
+
+        // 持久化到数据库
+        saveAuditLogToDatabase(auditLog, executionTime, null);
     }
 
     /**
@@ -127,132 +136,49 @@ public class AuditLogAspect {
                 String.format("%s - %s", auditLog.action(), auditLog.description()),
                 exception
         );
+
+        // 持久化到数据库
+        saveAuditLogToDatabase(auditLog, executionTime, exception);
     }
 
     /**
-     * 保存审计日志到数据库（可选功能）
+     * 保存审计日志到数据库
      *
-     * <p><b>实现优先级：</b>P1 - 应该实现（用于合规审计）
+     * <p>使用AuditLogService构建审计日志实体并异步保存到数据库</p>
      *
-     * <p><b>实现步骤：</b>
-     * <ol>
-     *   <li>创建 {@code AuditLogEntity} 实体类</li>
-     *   <li>创建 {@code AuditLogRepository} 接口</li>
-     *   <li>注入 Repository 并实现持久化逻辑</li>
-     *   <li>在 {@link #logSuccess} 和 {@link #logFailure} 中调用此方法</li>
-     * </ol>
-     *
-     * <p><b>实体类设计建议：</b>
-     * <pre>{@code
-     * @Entity
-     * @Table(name = "sys_audit_log")
-     * public class AuditLogEntity {
-     *     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-     *     private Long id;
-     *
-     *     private String module;           // 模块名
-     *     private String action;           // 操作名
-     *     private String auditType;        // 审计类型
-     *     private String description;      // 描述
-     *
-     *     // 操作人信息
-     *     private Long operatorId;
-     *     private String operatorUsername;
-     *
-     *     // 请求信息
-     *     private String traceId;
-     *     private String requestIp;
-     *     private String userAgent;
-     *
-     *     // 执行结果
-     *     private String status;           // SUCCESS / FAILURE
-     *     private Long executionTime;      // 执行时间(ms)
-     *
-     *     // 异常信息（仅失败时）
-     *     private String exceptionType;
-     *     private String exceptionMessage;
-     *
-     *     // 时间戳
-     *     @CreationTimestamp
-     *     private LocalDateTime createTime;
-     * }
-     * }</pre>
-     *
-     * <p><b>示例实现：</b>
-     * <pre>{@code
-     * @Autowired
-     * private AuditLogRepository auditLogRepository;
-     *
-     * private void saveAuditLogToDatabase(AuditLog auditLog, long startTime, Throwable exception) {
-     *     // 1. 构建实体
-     *     AuditLogEntity entity = new AuditLogEntity();
-     *     entity.setModule(auditLog.module());
-     *     entity.setAction(auditLog.action());
-     *     entity.setAuditType(auditLog.auditType().name());
-     *     entity.setDescription(auditLog.description());
-     *
-     *     // 2. 设置操作人信息（从 SecurityContext 获取）
-     *     SecurityContext context = SecurityContextHolder.getContext();
-     *     if (context.getAuthentication() != null) {
-     *         UserDetails userDetails = (UserDetails) context.getAuthentication().getPrincipal();
-     *         entity.setOperatorId(userDetails.getId());
-     *         entity.setOperatorUsername(userDetails.getUsername());
-     *     }
-     *
-     *     // 3. 设置请求信息
-     *     entity.setTraceId(MDC.get("traceId"));
-     *     HttpServletRequest request =
-     *         ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-     *     entity.setRequestIp(request.getRemoteAddr());
-     *     entity.setUserAgent(request.getHeader("User-Agent"));
-     *
-     *     // 4. 设置执行结果
-     *     entity.setStatus(exception == null ? "SUCCESS" : "FAILURE");
-     *     entity.setExecutionTime(System.currentTimeMillis() - startTime);
-     *
-     *     // 5. 记录异常信息（仅失败时）
-     *     if (exception != null) {
-     *         entity.setExceptionType(exception.getClass().getSimpleName());
-     *         // 限制异常消息长度，避免过长
-     *         String message = exception.getMessage();
-     *         entity.setExceptionMessage(message != null && message.length() > 1000
-     *             ? message.substring(0, 1000) + "..." : message);
-     *     }
-     *
-     *     // 6. 异步保存（避免影响业务性能）
-     *     CompletableFuture.runAsync(() -> auditLogRepository.save(entity));
-     * }
-     * }</pre>
-     *
-     * <p><b>调用位置：</b>
+     * <p><b>实现说明：</b></p>
      * <ul>
-     *   <li>在 {@link #logSuccess(AuditLog, long)} 末尾调用</li>
-     *   <li>在 {@link #logFailure(AuditLog, long, Throwable)} 末尾调用</li>
+     *   <li>自动提取操作人信息（用户ID、用户名）</li>
+     *   <li>自动提取请求信息（TraceId、IP、User-Agent）</li>
+     *   <li>记录执行状态和耗时</li>
+     *   <li>失败时记录异常类型和消息</li>
+     *   <li>使用auditLogExecutor线程池异步保存</li>
      * </ul>
      *
-     * @see AuditLog
-     *see org.springframework.scheduling.annotation.Async
+     * @param auditLog 审计日志注解
+     * @param executionTime 执行时间(毫秒)
+     * @param exception 异常对象(成功时为null)
+     * @since 1.0
      */
-    @Deprecated
-    @SuppressWarnings("unused")
-    private void saveAuditLogToDatabase(AuditLog auditLog, long startTime, Throwable exception) {
-        // TODO: P1 优先级 - 实现审计日志持久化
-        //
-        // 实现步骤：
-        // 1. 创建 AuditLogEntity 实体类（参考方法注释中的设计）
-        // 2. 创建 AuditLogRepository 接口
-        // 3. 注入 Repository 并实现持久化逻辑
-        // 4. 在 logSuccess 和 logFailure 中调用此方法
-        // 5. 配置 @EnableAsync 支持异步保存
-        //
-        // 注意事项：
-        // - 使用异步保存避免影响业务性能
-        // - 限制异常消息长度避免数据库字段过长
-        // - 考虑定期归档历史数据（如保留6个月）
-        //
-        // 目前只记录到日志文件，后续实现数据库存储以支持：
-        // - HIPAA 合规审计要求
-        // - 等保三级审计要求
-        // - 运营审计报表
+    private void saveAuditLogToDatabase(AuditLog auditLog, long executionTime, Throwable exception) {
+        try {
+            // 构建审计日志实体
+            AuditLogEntity entity = auditLogService.buildAuditLogEntity(
+                    auditLog.module(),
+                    auditLog.action(),
+                    auditLog.auditType().name(),
+                    auditLog.description(),
+                    exception == null ? "SUCCESS" : "FAILURE",
+                    executionTime,
+                    exception
+            );
+
+            // 异步保存到数据库
+            auditLogService.saveAuditLogAsync(entity);
+
+        } catch (Exception e) {
+            log.error("构建或保存审计日志实体失败: module={}, action={}, error={}",
+                    auditLog.module(), auditLog.action(), e.getMessage(), e);
+        }
     }
 }

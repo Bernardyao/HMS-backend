@@ -24,12 +24,22 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop  # 每次测试自动创建和删除表
+      ddl-auto: none  # 关键：完全由Flyway管理表结构，Hibernate只负责验证
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
+        generate_statistics: false
+
+  # Flyway 配置 - 集成测试启用（自动迁移数据库）
+  flyway:
+    enabled: true  # 关键：启用Flyway自动建表
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # 允许在空数据库上运行迁移
+    baseline-version: 0
+    clean-disabled: false  # 测试环境允许清理（可选）
+    validate-on-migrate: true  # 迁移前校验
 
 # 日志配置
 logging:
@@ -38,3 +48,4 @@ logging:
     com.his: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.test: DEBUG
+    org.flywaydb: DEBUG  # 显示Flyway迁移日志

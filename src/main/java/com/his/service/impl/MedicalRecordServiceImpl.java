@@ -15,6 +15,44 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 病历服务实现类
+ *
+ * <p>负责患者病历的管理，包括病历的创建、更新、查询和提交等</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li>病历创建：为挂号患者创建病历档案</li>
+ *   <li>病历更新：更新已有病历的内容和状态</li>
+ *   <li>病历查询：根据ID或挂号单ID查询病历</li>
+ *   <li>病历提交：将草稿状态的病历提交为正式病历</li>
+ *   <li>懒加载处理：自动初始化关联实体，避免LazyInitializationException</li>
+ * </ul>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>每个挂号单只能有一条有效病历</li>
+ *   <li>如果挂号单已存在病历，则更新；否则创建新病历</li>
+ *   <li>病历编号自动生成（格式：MR+yyyyMMddHHmmss+3位随机数）</li>
+ *   <li>只允许提交草稿状态（status=0）的病历</li>
+ *   <li>病历必须关联有效的挂号单</li>
+ * </ul>
+ *
+ * <h3>状态流转</h3>
+ * <ul>
+ *   <li>DRAFT（0=草稿）→ SUBMITTED（1=已提交）</li>
+ * </ul>
+ *
+ * <h3>相关实体</h3>
+ * <ul>
+ *   <li>{@link com.his.entity.MedicalRecord} - 病历主表</li>
+ *   <li>{@link com.his.entity.Registration} - 挂号单（病历必须关联挂号单）</li>
+ *   <li>{@link com.his.entity.Patient} - 患者信息</li>
+ *   <li>{@link com.his.entity.Doctor} - 医生信息</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.MedicalRecordService
  */
 @Slf4j
 @Service
@@ -26,10 +64,63 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
 
     /**
      * 保存或更新病历
-     * 如果该挂号单ID已存在病历，则更新；否则新建
+     *
+     * <p>如果挂号单已存在病历则更新，否则创建新病历</p>
+     *
+     * <p><b>业务流程：</b></p>
+     * <ol>
+     *   <li>参数校验：验证挂号单ID不为空</li>
+     *   <li>查询挂号单：验证挂号单存在且未删除</li>
+     *   <li>检查病历：查询是否已存在病历</li>
+     *   <li>创建或更新：存在则更新，不存在则创建</li>
+     *   <li>保存病历：持久化到数据库</li>
+     *   <li>初始化懒加载：避免LazyInitializationException</li>
+     * </ol>
+     *
+     * <p><b>业务规则：</b></p>
+     * <ul>
+     *   <li>每个挂号单只能有一条有效病历（isDeleted=0）</li>
+     *   <li>病历编号自动生成（格式：MR+yyyyMMddHHmmss+3位随机数）</li>
+     *   <li>新病历默认状态为草稿（status=0）</li>
+     *   <li>自动关联挂号单的患者和医生信息</li>
+     * </ul>
+     *
+     * <p><b>前置条件：</b></p>
+     * <ul>
+     *   <li>挂号单ID不为空</li>
+     *   <li>挂号单存在且未删除</li>
+     * </ul>
+     *
+     * <p><b>后置条件：</b></p>
+     * <ul>
+     *   <li>病历已创建或更新</li>
+     *   <li>关联实体的懒加载字段已初始化</li>
+     * </ul>
+     *
+     * @param dto 病历信息DTO
+     *            <ul>
+     *              <li>registrationId: 挂号单ID（必填）</li>
+     *              <li>chiefComplaint: 主诉</li>
+     *              <li>presentIllness: 现病史</li>
+     *              <li>pastHistory: 既往史</li>
+     *              <li>personalHistory: 个人史</li>
+     *              <li>familyHistory: 家族史</li>
+     *              <li>physicalExam: 体格检查</li>
+     *              <li>auxiliaryExam: 辅助检查</li>
+     *              <li>diagnosis: 诊断</li>
+     *              <li>diagnosisCode: 诊断编码</li>
+     *              <li>treatmentPlan: 治疗方案</li>
+     *              <li>doctorAdvice: 医嘱</li>
+     *              <li>status: 状态（可选，默认为0=草稿）</li>
+     *            </ul>
+     * @return 保存或更新后的病历实体
+     * @throws IllegalArgumentException 如果挂号单ID为空
+     * @throws IllegalArgumentException 如果挂号单不存在或已删除
+     * @since 1.0
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @SuppressWarnings("unused")
     public MedicalRecord saveOrUpdate(MedicalRecordDTO dto) {
         log.info("开始保存或更新病历，挂号单ID: {}", dto.getRegistrationId());
 
@@ -44,6 +135,15 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
 
         if (registration.getIsDeleted() == 1) {
             throw new IllegalArgumentException("挂号单已被删除");
+        }
+
+        // 显式初始化懒加载字段，确保可以访问
+        // 触发懒加载，避免在事务外访问
+        if (registration.getPatient() != null) {
+            String patientName = registration.getPatient().getName();
+        }
+        if (registration.getDoctor() != null) {
+            String doctorName = registration.getDoctor().getName();
         }
 
         // 3. 检查是否已存在病历
@@ -73,6 +173,23 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
 
     /**
      * 根据ID查询病历
+     *
+     * <p>查询指定ID的病历及其关联信息</p>
+     *
+     * <p><b>查询内容：</b></p>
+     * <ul>
+     *   <li>病历基本信息（病历编号、内容、状态等）</li>
+     *   <li>患者信息（姓名、性别、年龄等）</li>
+     *   <li>医生信息（医生姓名）</li>
+     *   <li>挂号单信息</li>
+     * </ul>
+     *
+     * @param id 病历ID
+     * @return 病历实体（包含关联信息）
+     * @throws IllegalArgumentException 如果病历ID为空
+     * @throws IllegalArgumentException 如果病历不存在
+     * @throws IllegalArgumentException 如果病历已删除
+     * @since 1.0
      */
     @Override
     @Transactional(readOnly = true)
@@ -98,6 +215,25 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
 
     /**
      * 根据挂号单ID查询病历
+     *
+     * <p>查询指定挂号单的病历记录</p>
+     *
+     * <p><b>业务规则：</b></p>
+     * <ul>
+     *   <li>每个挂号单最多有一条有效病历</li>
+     *   <li>如果病历不存在，返回null（不抛出异常）</li>
+     * </ul>
+     *
+     * <p><b>使用场景：</b></p>
+     * <ul>
+     *   <li>医生开具处方前查询病历</li>
+     *   <li>查看患者病史记录</li>
+     * </ul>
+     *
+     * @param registrationId 挂号单ID
+     * @return 病历实体，如果不存在则返回null
+     * @throws IllegalArgumentException 如果挂号单ID为空
+     * @since 1.0
      */
     @Override
     @Transactional(readOnly = true)
@@ -121,7 +257,38 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
     }
 
     /**
-     * 提交病历（状态改为已提交）
+     * 提交病历
+     *
+     * <p>将草稿状态的病历提交为正式病历</p>
+     *
+     * <p><b>业务规则：</b></p>
+     * <ul>
+     *   <li>只允许提交草稿状态（status=0）的病历</li>
+     *   <li>提交后病历状态变更为已提交（status=1）</li>
+     *   <li>已提交的病历不能再次修改</li>
+     * </ul>
+     *
+     * <p><b>使用场景：</b></p>
+     * <ul>
+     *   <li>医生完成接诊后提交病历</li>
+     *   <li>提交后的病历才能开具处方</li>
+     * </ul>
+     *
+     * <p><b>前置条件：</b></p>
+     * <ul>
+     *   <li>病历存在且未删除</li>
+     *   <li>病历状态为草稿（status=0）</li>
+     * </ul>
+     *
+     * <p><b>后置条件：</b></p>
+     * <ul>
+     *   <li>病历状态更新为已提交（status=1）</li>
+     * </ul>
+     *
+     * @param id 病历ID
+     * @throws IllegalArgumentException 如果病历不存在
+     * @throws IllegalStateException 如果病历状态不是草稿
+     * @since 1.0
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,7 +318,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         String recordNo = generateRecordNo();
         record.setRecordNo(recordNo);
 
-        // 设置关联
+        // 设置关联 - 直接使用registration对象及其关联
         record.setRegistration(registration);
         record.setPatient(registration.getPatient());
         record.setDoctor(registration.getDoctor());
@@ -159,12 +326,11 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         // 设置病历内容
         setMedicalRecordContent(record, dto);
 
-        // 设置状态和时间
+        // 设置状态
         record.setStatus(dto.getStatus() != null ? dto.getStatus() : (short) 0);
         record.setIsDeleted((short) 0);
-        record.setVisitTime(LocalDateTime.now());
-        record.setCreatedAt(LocalDateTime.now());
-        record.setUpdatedAt(LocalDateTime.now());
+        
+        // 时间字段将由@PrePersist自动设置，不需要手动设置
 
         return record;
     }
@@ -181,8 +347,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
             record.setStatus(dto.getStatus());
         }
 
-        // 更新时间
-        record.setUpdatedAt(LocalDateTime.now());
+        // 更新时间将由@PreUpdate自动设置
     }
 
     /**
@@ -213,20 +378,36 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
     }
 
     /**
-     * 初始化懒加载字段，避免LazyInitializationException
+     * 强制初始化 JPA 懒加载关联，避免 LazyInitializationException
+     *
+     * <p><b>重要说明：</b></p>
+     * <ul>
+     *   <li>这些方法调用是有副作用的（触发 SQL 查询）</li>
+     *   <li>变量赋值仅为了避免编译器/SpotBugs "unused" 警告</li>
+     *   <li>必须在事务内调用，否则会抛出 LazyInitializationException</li>
+     * </ul>
+     *
+     * <p><b>为什么需要这个方法：</b></p>
+     * <pre>
+     * 1. Service 方法返回后，事务可能关闭
+     * 2. Controller/序列化访问懒加载字段 → LazyInitializationException
+     * 3. 解决方案：在事务内主动触发加载
+     * </pre>
+     *
+     * @param record 要初始化的病历实体
      */
+    @SuppressWarnings("unused")
     private void initializeLazyFields(MedicalRecord record) {
+        // 在事务内主动触发 SQL 查询，加载关联实体
+        // 这样即使事务关闭后，这些字段仍然可用
         if (record.getPatient() != null) {
-            // 触发Patient的懒加载
-            record.getPatient().getName();
+            String patientName = record.getPatient().getName(); // 触发 Patient 加载
         }
         if (record.getDoctor() != null) {
-            // 触发Doctor的懒加载
-            record.getDoctor().getName();
+            String doctorName = record.getDoctor().getName(); // 触发 Doctor 加载
         }
         if (record.getRegistration() != null) {
-            // 触发Registration的懒加载
-            record.getRegistration().getMainId();
+            Long mainId = record.getRegistration().getMainId(); // 触发 Registration 加载
         }
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +42,35 @@ class RepositoryTest {
     @Autowired
     private DoctorRepository doctorRepository;
 
+    @Autowired
+    private ChargeRepository chargeRepository;
+
+    @Autowired
+    private ChargeDetailRepository chargeDetailRepository;
+    
+    @Autowired
+    private PrescriptionDetailRepository prescriptionDetailRepository;
+    
+    @Autowired
+    private PrescriptionRepository prescriptionRepository;
+    
+    @Autowired
+    private MedicalRecordRepository medicalRecordRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        // 按照外键依赖顺序清理：先子表，后父表
+        chargeDetailRepository.deleteAll();
+        chargeRepository.deleteAll();
+        prescriptionDetailRepository.deleteAll();
+        prescriptionRepository.deleteAll();
+        medicalRecordRepository.deleteAll();
+        registrationRepository.deleteAll();
+        doctorRepository.deleteAll();
+        departmentRepository.deleteAll();
+        patientRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("测试 Patient 的保存和自定义查询")
     void testSaveAndFind() {
@@ -55,14 +86,14 @@ class RepositoryTest {
 
         // 4. 使用自定义方法 findByIdCardAndIsDeleted 查询患者
         Optional<Patient> foundPatient = patientRepository.findByIdCardAndIsDeleted(
-                "320106199001011234", (short) 0);
+                savedPatient.getIdCard(), (short) 0);
 
         // 5. 验证查出的数据与保存的一致
         assertTrue(foundPatient.isPresent(), "应该能查询到患者");
         assertThat(foundPatient.get().getMainId()).isEqualTo(savedPatient.getMainId());
-        assertThat(foundPatient.get().getPatientNo()).isEqualTo("P20250001");
+        assertThat(foundPatient.get().getPatientNo()).isEqualTo(savedPatient.getPatientNo());
         assertThat(foundPatient.get().getName()).isEqualTo("张三");
-        assertThat(foundPatient.get().getIdCard()).isEqualTo("320106199001011234");
+        assertThat(foundPatient.get().getIdCard()).isEqualTo(savedPatient.getIdCard());
         assertThat(foundPatient.get().getPhone()).isEqualTo("13800138000");
         assertThat(foundPatient.get().getGender()).isEqualTo((short) 1);
 
@@ -84,32 +115,37 @@ class RepositoryTest {
 
         // 8. 使用自定义方法查询挂号记录
         Optional<Registration> foundRegistration = registrationRepository.findByRegNoAndIsDeleted(
-                "R20250001", (short) 0);
+                savedRegistration.getRegNo(), (short) 0);
 
         assertTrue(foundRegistration.isPresent(), "应该能查询到挂号记录");
         assertThat(foundRegistration.get().getMainId()).isEqualTo(savedRegistration.getMainId());
-        assertThat(foundRegistration.get().getRegNo()).isEqualTo("R20250001");
+        assertThat(foundRegistration.get().getRegNo()).isEqualTo(savedRegistration.getRegNo());
         assertThat(foundRegistration.get().getStatus()).isEqualTo((short) 0);
     }
 
     @Test
     @DisplayName("测试 Patient 模糊查询")
     void testFindByNameContaining() {
+        // 清理之前测试的数据
+        patientRepository.deleteAll();
+
         // 准备测试数据
+        String timestamp = String.valueOf(System.currentTimeMillis());
+
         Patient patient1 = createTestPatient();
-        patient1.setPatientNo("P20250001");
+        patient1.setPatientNo("P2025" + timestamp + "01");
         patient1.setName("张三");
         patient1.setIdCard("320106199001011234");
         patientRepository.save(patient1);
 
         Patient patient2 = createTestPatient();
-        patient2.setPatientNo("P20250002");
+        patient2.setPatientNo("P2025" + timestamp + "02");
         patient2.setName("张三丰");
         patient2.setIdCard("320106199002022345");
         patientRepository.save(patient2);
 
         Patient patient3 = createTestPatient();
-        patient3.setPatientNo("P20250003");
+        patient3.setPatientNo("P2025" + timestamp + "03");
         patient3.setName("李四");
         patient3.setIdCard("320106199003033456");
         patientRepository.save(patient3);
@@ -126,9 +162,15 @@ class RepositoryTest {
     @Test
     @DisplayName("测试 Department 层级查询")
     void testDepartmentHierarchy() {
+        // 清理之前测试的数据 - 按照外键依赖顺序删除
+        doctorRepository.deleteAll();  // Doctor依赖Department
+        departmentRepository.deleteAll();
+
+        String timestamp = String.valueOf(System.currentTimeMillis());
+
         // 创建父科室
         Department parentDept = new Department();
-        parentDept.setDeptCode("D001");
+        parentDept.setDeptCode("D001_" + timestamp);
         parentDept.setName("内科");
         parentDept.setStatus((short) 1);
         parentDept.setIsDeleted((short) 0);
@@ -137,7 +179,7 @@ class RepositoryTest {
 
         // 创建子科室
         Department childDept = new Department();
-        childDept.setDeptCode("D001-01");
+        childDept.setDeptCode("D001-01_" + timestamp);
         childDept.setName("心血管内科");
         childDept.setStatus((short) 1);
         childDept.setIsDeleted((short) 0);
@@ -164,14 +206,16 @@ class RepositoryTest {
         Department department = createTestDepartment();
         Department savedDept = departmentRepository.save(department);
 
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        
         // 创建医生
         Doctor doctor1 = createTestDoctor(savedDept);
-        doctor1.setDoctorNo("D001");
+        doctor1.setDoctorNo("D001_" + timestamp);
         doctor1.setName("王医生");
         doctorRepository.save(doctor1);
 
         Doctor doctor2 = createTestDoctor(savedDept);
-        doctor2.setDoctorNo("D002");
+        doctor2.setDoctorNo("D002_" + timestamp);
         doctor2.setName("李医生");
         doctorRepository.save(doctor2);
 
@@ -192,17 +236,18 @@ class RepositoryTest {
      * 创建测试用患者对象
      */
     private Patient createTestPatient() {
+        String suffix = String.valueOf(System.currentTimeMillis() % 1000000);
         Patient patient = new Patient();
-        patient.setPatientNo("P20250001");
+        patient.setPatientNo("P_" + suffix);
         patient.setName("张三");
         patient.setGender((short) 1);
-        patient.setIdCard("320106199001011234");
+        patient.setIdCard("32010619900101" + suffix.substring(0, Math.min(4, suffix.length())));
         patient.setPhone("13800138000");
         patient.setBirthDate(LocalDate.of(1990, 1, 1));
         patient.setAge((short) 35);
         patient.setAddress("南京市鼓楼区");
         patient.setIsDeleted((short) 0);
-        patient.setMedicalCardNo("MC20250001");
+        patient.setMedicalCardNo("MC_" + suffix);
         patient.setEmergencyContact("李四");
         patient.setEmergencyPhone("13900139000");
         patient.setBloodType("A");
@@ -213,8 +258,9 @@ class RepositoryTest {
      * 创建测试用科室对象
      */
     private Department createTestDepartment() {
+        String timestamp = String.valueOf(System.currentTimeMillis());
         Department department = new Department();
-        department.setDeptCode("D001");
+        department.setDeptCode("D001_" + timestamp);
         department.setName("内科");
         department.setStatus((short) 1);
         department.setIsDeleted((short) 0);
@@ -227,8 +273,9 @@ class RepositoryTest {
      * 创建测试用医生对象
      */
     private Doctor createTestDoctor(Department department) {
+        String timestamp = String.valueOf(System.currentTimeMillis());
         Doctor doctor = new Doctor();
-        doctor.setDoctorNo("D20250001");
+        doctor.setDoctorNo("D20250001_" + timestamp);
         doctor.setName("王医生");
         doctor.setGender((short) 1);
         doctor.setDepartment(department);
@@ -236,7 +283,7 @@ class RepositoryTest {
         doctor.setSpecialty("心血管疾病");
         doctor.setPhone("13700137000");
         doctor.setEmail("doctor.wang@hospital.com");
-        doctor.setLicenseNo("L20250001");
+        doctor.setLicenseNo("L20250001_" + timestamp);
         doctor.setStatus((short) 1);
         doctor.setIsDeleted((short) 0);
         return doctor;
@@ -246,11 +293,12 @@ class RepositoryTest {
      * 创建测试用挂号记录对象
      */
     private Registration createTestRegistration(Patient patient, Doctor doctor, Department department) {
+        String timestamp = String.valueOf(System.currentTimeMillis());
         Registration registration = new Registration();
         registration.setPatient(patient);
         registration.setDoctor(doctor);
         registration.setDepartment(department);
-        registration.setRegNo("R20250001");
+        registration.setRegNo("R20250001_" + timestamp);
         registration.setVisitDate(LocalDate.now());
         registration.setVisitType((short) 1);
         registration.setRegistrationFee(new BigDecimal("20.00"));
@@ -259,5 +307,59 @@ class RepositoryTest {
         registration.setQueueNo("001");
         registration.setAppointmentTime(LocalDateTime.now().plusHours(1));
         return registration;
+    }
+
+    @Test
+    @DisplayName("测试 Charge 及其明细的级联保存和查询")
+    void testSaveAndFindChargeWithDetails() {
+        // 1. 准备患者
+        Patient patient = createTestPatient();
+        patient = patientRepository.save(patient);
+
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        
+        // 2. 创建收费主表
+        Charge charge = new Charge();
+        charge.setPatient(patient);
+        charge.setChargeNo("CHG-TEST-001_" + timestamp);
+        charge.setChargeType((short) 2);
+        charge.setTotalAmount(new BigDecimal("100.00"));
+        charge.setActualAmount(new BigDecimal("100.00"));
+        charge.setStatus((short) 0);
+
+        // 3. 创建收费明细
+        List<ChargeDetail> details = new ArrayList<>();
+
+        ChargeDetail detail1 = new ChargeDetail();
+        detail1.setCharge(charge);
+        detail1.setItemType("REGISTRATION");
+        detail1.setItemId(1L);
+        detail1.setItemName("Registration Fee");
+        detail1.setItemAmount(new BigDecimal("10.00"));
+        details.add(detail1);
+
+        ChargeDetail detail2 = new ChargeDetail();
+        detail2.setCharge(charge);
+        detail2.setItemType("PRESCRIPTION");
+        detail2.setItemId(10L);
+        detail2.setItemName("Medicine A");
+        detail2.setItemAmount(new BigDecimal("90.00"));
+        details.add(detail2);
+
+        charge.setDetails(details);
+
+        // 4. 保存 (应该级联保存明细)
+        Charge savedCharge = chargeRepository.save(charge);
+        assertNotNull(savedCharge.getMainId());
+
+        // 5. 查询验证
+        Charge foundCharge = chargeRepository.findById(savedCharge.getMainId()).orElseThrow();
+        assertThat(foundCharge.getDetails()).hasSize(2);
+        assertThat(foundCharge.getDetails()).extracting(ChargeDetail::getItemName)
+                .containsExactlyInAnyOrder("Registration Fee", "Medicine A");
+
+        // 6. 验证明细 Repository 查询
+        List<ChargeDetail> foundDetails = chargeDetailRepository.findByCharge_MainId(savedCharge.getMainId());
+        assertThat(foundDetails).hasSize(2);
     }
 }

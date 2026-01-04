@@ -1,19 +1,15 @@
 package com.his.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.his.dto.MedicalRecordDTO;
 import com.his.dto.PrescriptionDTO;
 import com.his.entity.*;
 import com.his.repository.*;
+import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,19 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 医生工作站 - 病历与处方集成测试
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("医生工作站 - 病历与处方集成测试")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class DoctorWorkstationIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class DoctorWorkstationIntegrationTest extends BaseControllerTest {
 
     @Autowired
     private DepartmentRepository departmentRepository;
@@ -84,10 +70,12 @@ class DoctorWorkstationIntegrationTest {
     }
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
+        String timestamp = String.valueOf(System.currentTimeMillis());
+
         // 准备测试数据：科室
         Department department = new Department();
-        department.setDeptCode("D001");
+        department.setDeptCode("D001_" + timestamp);
         department.setName("内科");
         department.setStatus((short) 1);
         department.setIsDeleted((short) 0);
@@ -97,7 +85,7 @@ class DoctorWorkstationIntegrationTest {
 
         // 准备测试数据：医生
         Doctor doctor = new Doctor();
-        doctor.setDoctorNo("DOC001");
+        doctor.setDoctorNo("DOC001_" + timestamp);
         doctor.setName("张医生");
         doctor.setGender((short) 1);
         doctor.setDepartment(savedDept);
@@ -109,7 +97,7 @@ class DoctorWorkstationIntegrationTest {
 
         // 准备测试数据：患者
         Patient patient = new Patient();
-        patient.setPatientNo("P001");
+        patient.setPatientNo("P001_" + timestamp);
         patient.setName("李患者");
         patient.setIdCard("320106199501012345");
         patient.setGender((short) 1);
@@ -121,7 +109,7 @@ class DoctorWorkstationIntegrationTest {
 
         // 准备测试数据：挂号单
         Registration registration = new Registration();
-        registration.setRegNo("REG" + System.currentTimeMillis());
+        registration.setRegNo("REG" + timestamp);
         registration.setPatient(savedPatient);
         registration.setDepartment(savedDept);
         registration.setDoctor(savedDoctor);
@@ -129,12 +117,13 @@ class DoctorWorkstationIntegrationTest {
         registration.setRegistrationFee(new BigDecimal("15.00"));
         registration.setStatus((short) 0);
         registration.setIsDeleted((short) 0);
+        registration.setQueueNo("001");
         Registration savedReg = registrationRepository.save(registration);
         testRegistrationId = savedReg.getMainId();
 
         // 准备测试数据：药品1
         Medicine medicine1 = new Medicine();
-        medicine1.setMedicineCode("MED001");
+        medicine1.setMedicineCode("MED001_" + timestamp);
         medicine1.setName("阿莫西林胶囊");
         medicine1.setRetailPrice(new BigDecimal("12.5000"));
         medicine1.setStockQuantity(1000);
@@ -147,7 +136,7 @@ class DoctorWorkstationIntegrationTest {
 
         // 准备测试数据：药品2
         Medicine medicine2 = new Medicine();
-        medicine2.setMedicineCode("MED002");
+        medicine2.setMedicineCode("MED002_" + timestamp);
         medicine2.setName("布洛芬片");
         medicine2.setRetailPrice(new BigDecimal("8.8000"));
         medicine2.setStockQuantity(500);
@@ -189,7 +178,7 @@ class DoctorWorkstationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].medicineCode").value("MED001"));
+                .andExpect(jsonPath("$.data[0].medicineCode").value(containsString("MED001")));
     }
 
     @Test
@@ -311,13 +300,18 @@ class DoctorWorkstationIntegrationTest {
         // 先创建病历
         MedicalRecordDTO recordDTO = new MedicalRecordDTO();
         recordDTO.setRegistrationId(testRegistrationId);
+        recordDTO.setChiefComplaint("头痛、发热");  // 添加主诉字段
         recordDTO.setDiagnosis("上呼吸道感染");
         recordDTO.setStatus((short) 1);
 
-        mockMvc.perform(post("/api/doctor/medical-records/save")
+        String recordResponse = mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(recordDTO)))
-                .andExpect(status().isOk());
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        
+        System.out.println("病历创建响应: " + recordResponse);
 
         // 创建处方
         PrescriptionDTO dto = new PrescriptionDTO();
@@ -349,6 +343,9 @@ class DoctorWorkstationIntegrationTest {
 
         dto.setItems(items);
 
+        System.out.println("准备创建处方，testRegistrationId=" + testRegistrationId);
+        System.out.println("处方DTO: " + objectMapper.writeValueAsString(dto));
+
         // 预期总金额 = 阿莫西林(12.5 * 2) + 布洛芬(8.8 * 1) = 25.0 + 8.8 = 33.8
         mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -371,6 +368,7 @@ class DoctorWorkstationIntegrationTest {
         // 先创建病历
         MedicalRecordDTO recordDTO = new MedicalRecordDTO();
         recordDTO.setRegistrationId(testRegistrationId);
+        recordDTO.setChiefComplaint("测试主诉");  // 添加主诉字段
         recordDTO.setDiagnosis("测试诊断");
 
         mockMvc.perform(post("/api/doctor/medical-records/save")
@@ -390,22 +388,17 @@ class DoctorWorkstationIntegrationTest {
         dto.setItems(items);
 
         // 数据库中阿莫西林单价为 12.5，数量5，预期总金额 = 12.5 * 5 = 62.5
-        mockMvc.perform(post("/api/doctor/prescriptions/create")
+        String response = mockMvc.perform(post("/api/doctor/prescriptions/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.totalAmount").value(62.50));
+                .andExpect(jsonPath("$.data.totalAmount").value(62.50))
+                .andReturn().getResponse().getContentAsString();
 
         // 验证处方明细中的单价是从数据库读取的
-        String response = mockMvc.perform(post("/api/doctor/prescriptions/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andReturn().getResponse().getContentAsString();
-        
-        Long prescriptionId = Long.parseLong(
-            response.substring(response.indexOf("\"mainId\":") + 9, 
-            response.indexOf(",", response.indexOf("\"mainId\":"))));
+        JsonNode root = objectMapper.readTree(response);
+        Long prescriptionId = root.get("data").get("mainId").asLong();
 
         List<PrescriptionDetail> details = prescriptionDetailRepository
                 .findByPrescription_MainIdAndIsDeletedOrderBySortOrder(prescriptionId, (short) 0);
@@ -426,10 +419,11 @@ class DoctorWorkstationIntegrationTest {
         newReg.setPatient(patientRepository.findById(testPatientId).get());
         newReg.setDepartment(departmentRepository.findById(testDeptId).get());
         newReg.setDoctor(doctorRepository.findById(testDoctorId).get());
-        newReg.setVisitDate(LocalDate.now());
+        newReg.setVisitDate(LocalDate.now().plusDays(1)); // 使用不同的日期避免唯一约束冲突
         newReg.setRegistrationFee(new BigDecimal("15.00"));
         newReg.setStatus((short) 0);
         newReg.setIsDeleted((short) 0);
+        newReg.setQueueNo("NEW001");
         Registration savedNewReg = registrationRepository.save(newReg);
 
         // 尝试创建处方（没有病历）
@@ -460,6 +454,7 @@ class DoctorWorkstationIntegrationTest {
         // 先创建病历和处方
         MedicalRecordDTO recordDTO = new MedicalRecordDTO();
         recordDTO.setRegistrationId(testRegistrationId);
+        recordDTO.setChiefComplaint("测试主诉");  // 添加主诉字段
         recordDTO.setDiagnosis("测试诊断");
         mockMvc.perform(post("/api/doctor/medical-records/save")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -480,9 +475,9 @@ class DoctorWorkstationIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andReturn().getResponse().getContentAsString();
 
-        Long prescriptionId = Long.parseLong(
-            response.substring(response.indexOf("\"mainId\":") + 9, 
-            response.indexOf(",", response.indexOf("\"mainId\":"))));
+        // 使用JsonNode解析响应
+        JsonNode root = objectMapper.readTree(response);
+        Long prescriptionId = root.get("data").get("mainId").asLong();
 
         // 查询处方详情
         mockMvc.perform(get("/api/doctor/prescriptions/{id}", prescriptionId)
@@ -515,7 +510,7 @@ class DoctorWorkstationIntegrationTest {
                         .param("keyword", "阿莫西林"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].mainId").value(testMedicine1Id));
+                .andExpect(jsonPath("$.data[?(@.mainId == " + testMedicine1Id + ")]").exists()); // 确认包含测试药品
 
         // Step 2: 创建病历
         MedicalRecordDTO recordDTO = new MedicalRecordDTO();

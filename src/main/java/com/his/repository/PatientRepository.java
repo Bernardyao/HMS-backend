@@ -72,4 +72,16 @@ public interface PatientRepository extends JpaRepository<Patient, Long>, JpaSpec
      * 根据ID列表批量查询
      */
     List<Patient> findByMainIdInAndIsDeleted(List<Long> ids, Short isDeleted);
+
+    // ========== 编号生成方法 - 使用数据库序列保证线程安全 ==========
+
+    /**
+     * 通过数据库原生函数生成患者病历号（线程安全）
+     *
+     * <p>使用PostgreSQL序列保证唯一性，格式：P + yyyyMMdd + 4位序列</p>
+     *
+     * @return 唯一的患者病历号
+     */
+    @Query(value = "SELECT generate_patient_no()", nativeQuery = true)
+    String generatePatientNo();
 }

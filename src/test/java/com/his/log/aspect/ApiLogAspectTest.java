@@ -24,7 +24,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @DisplayName("API 日志切面测试")
 class ApiLogAspectTest {
 
-    private static final Logger log = LoggerFactory.getLogger(ApiLogAspectTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ApiLogAspectTest.class);
 
     /**
      * 测试 @ApiLog 注解的基本功能
@@ -39,12 +39,12 @@ class ApiLogAspectTest {
     @Test
     @DisplayName("应该记录 API 请求日志（手动验证）")
     void shouldLogApiRequest() {
-        log.info("=== 测试说明 ===");
-        log.info("请在实际 Controller 方法上使用 @ApiLog 注解");
-        log.info("然后调用该 API，观察控制台输出");
-        log.info("预期输出：");
-        log.info("  [API-START] GET /api/xxx | 操作: xxx | 参数: {}");
-        log.info("  [API-END] GET /api/xxx | 操作: xxx | 执行时间: XXms | 状态: ✅ SUCCESS");
+        LOG.info("=== 测试说明 ===");
+        LOG.info("请在实际 Controller 方法上使用 @ApiLog 注解");
+        LOG.info("然后调用该 API，观察控制台输出");
+        LOG.info("预期输出：");
+        LOG.info("  [API-START] GET /api/xxx | 操作: xxx | 参数: {}");
+        LOG.info("  [API-END] GET /api/xxx | 操作: xxx | 执行时间: XXms | 状态: ✅ SUCCESS");
     }
 
     /**
@@ -59,10 +59,10 @@ class ApiLogAspectTest {
     @Test
     @DisplayName("应该检测慢请求（手动验证）")
     void shouldDetectSlowRequest() {
-        log.info("=== 慢请求测试说明 ===");
-        log.info("请使用 @ApiLog(slowThreshold = 100) 标记慢方法");
-        log.info("预期输出：");
-        log.info("  [API-SLOW] GET /api/slow-endpoint | 操作: 慢操作 | 执行时间: 500ms | 阈值: 100ms | ⚠️ 慢请求");
+        LOG.info("=== 慢请求测试说明 ===");
+        LOG.info("请使用 @ApiLog(slowThreshold = 100) 标记慢方法");
+        LOG.info("预期输出：");
+        LOG.info("  [API-SLOW] GET /api/slow-endpoint | 操作: 慢操作 | 执行时间: 500ms | 阈值: 100ms | ⚠️ 慢请求");
     }
 
     /**
@@ -77,9 +77,9 @@ class ApiLogAspectTest {
     @Test
     @DisplayName("应该记录异常情况（手动验证）")
     void shouldLogException() {
-        log.info("=== 异常日志测试说明 ===");
-        log.info("当标记了 @ApiLog 的方法抛出异常时");
-        log.info("预期输出：");
-        log.info("  [API-END] GET /api/xxx | 操作: xxx | 执行时间: XXms | 状态: ❌ FAILED | 异常: XxxException");
+        LOG.info("=== 异常日志测试说明 ===");
+        LOG.info("当标记了 @ApiLog 的方法抛出异常时");
+        LOG.info("预期输出：");
+        LOG.info("  [API-END] GET /api/xxx | 操作: xxx | 执行时间: XXms | 状态: ❌ FAILED | 异常: XxxException");
     }
 }

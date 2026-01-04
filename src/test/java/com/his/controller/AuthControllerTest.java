@@ -4,16 +4,12 @@ import com.his.common.JwtUtils;
 import com.his.dto.LoginRequest;
 import com.his.entity.SysUser;
 import com.his.repository.SysUserRepository;
+import com.his.test.base.BaseControllerTest;
 import com.his.vo.LoginVO;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,19 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 登录认证集成测试
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
 @DisplayName("登录认证集成测试")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class AuthControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class AuthControllerTest extends BaseControllerTest {
 
     @Autowired
     private SysUserRepository sysUserRepository;
@@ -53,7 +40,7 @@ class AuthControllerTest {
     private String testRole = "ADMIN";
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         // 清空用户数据
         sysUserRepository.deleteAll();
 

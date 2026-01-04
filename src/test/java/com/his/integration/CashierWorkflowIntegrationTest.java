@@ -1,6 +1,5 @@
 package com.his.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
 import com.his.dto.PrescriptionDTO;
@@ -9,16 +8,14 @@ import com.his.enums.PrescriptionStatusEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.*;
 import com.his.service.PrescriptionService;
+import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,16 +27,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("integration-test")
+/**
+ * 收费模块完整工作流集成测试
+ *
+ * <p>继承自BaseControllerTest，自动获得MockMvc、ObjectMapper和事务管理</p>
+ */
+@ActiveProfiles("integration-test")  // 覆盖父类的 "test" profile
 @DisplayName("收费模块完整工作流集成测试")
-class CashierWorkflowIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
+class CashierWorkflowIntegrationTest extends BaseControllerTest {
     @Autowired
     private PrescriptionService prescriptionService;
     @Autowired
@@ -62,7 +57,7 @@ class CashierWorkflowIntegrationTest {
     private Long testMedId;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         String uid = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         
         // 1. 基础数据
@@ -100,6 +95,7 @@ class CashierWorkflowIntegrationTest {
         reg.setRegistrationFee(new BigDecimal("10.00"));
         reg.setStatus(RegStatusEnum.COMPLETED.getCode());
         reg.setIsDeleted((short) 0);
+        reg.setQueueNo("Q" + uid);
         reg = registrationRepository.saveAndFlush(reg);
         testRegId = reg.getMainId();
 
@@ -119,6 +115,7 @@ class CashierWorkflowIntegrationTest {
         Medicine med = new Medicine();
         med.setMedicineCode("M" + uid);
         med.setName("板蓝根");
+        med.setUnit("袋");
         med.setRetailPrice(new BigDecimal("15.00"));
         med.setStockQuantity(100);
         med.setStatus((short) 1);
@@ -136,7 +133,7 @@ class CashierWorkflowIntegrationTest {
         
         Prescription p = prescriptionService.createPrescription(pDto);
         testPrescriptionId = p.getMainId();
-        
+
         // 6. 审核 (模拟药师审核)
         prescriptionService.review(testPrescriptionId, 1L, "OK");
     }
@@ -285,12 +282,32 @@ class CashierWorkflowIntegrationTest {
     @DisplayName("边界条件：只包含挂号费，不包含处方")
     @WithMockUser(roles = "CASHIER")
     void testCreateChargeWithRegistrationOnly() throws Exception {
-        // Given: 创建收费单，只包含挂号费，不包含处方
+        // Given: 创建一个WAITING状态的挂号单（用于仅挂号收费场景）
+        String uid = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        Registration regWaiting = new Registration();
+        regWaiting.setRegNo("RW" + uid);
+        regWaiting.setPatient(patientRepository.findById(
+            registrationRepository.findById(testRegId).orElseThrow().getPatient().getMainId()
+        ).orElseThrow());
+        regWaiting.setDepartment(departmentRepository.findById(
+            registrationRepository.findById(testRegId).orElseThrow().getDepartment().getMainId()
+        ).orElseThrow());
+        regWaiting.setDoctor(doctorRepository.findById(
+            registrationRepository.findById(testRegId).orElseThrow().getDoctor().getMainId()
+        ).orElseThrow());
+        regWaiting.setVisitDate(LocalDate.now());
+        regWaiting.setRegistrationFee(new BigDecimal("10.00"));
+        regWaiting.setStatus(RegStatusEnum.WAITING.getCode()); // 待就诊状态
+        regWaiting.setIsDeleted((short) 0);
+        regWaiting.setQueueNo("QW" + uid);
+        Long waitingRegId = registrationRepository.saveAndFlush(regWaiting).getMainId();
+
+        // When: 创建收费单，只包含挂号费，不包含处方
         CreateChargeDTO createDto = new CreateChargeDTO();
-        createDto.setRegistrationId(testRegId);
+        createDto.setRegistrationId(waitingRegId);
         createDto.setPrescriptionIds(null); // 无处方
 
-        // When & Then: 应成功创建，金额仅为挂号费
+        // Then: 应成功创建，金额仅为挂号费
         mockMvc.perform(post("/api/cashier/charges")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
@@ -319,10 +336,10 @@ class CashierWorkflowIntegrationTest {
         com.his.controller.ChargeController.RefundRequest refundReq = new com.his.controller.ChargeController.RefundRequest();
         refundReq.setRefundReason("测试退费");
 
-        // Then: 应返回错误
+        // Then: 应返回400错误（业务异常：未支付不能退费）
         mockMvc.perform(post("/api/cashier/charges/" + chargeId + "/refund")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(refundReq)))
-                .andExpect(status().isInternalServerError()); // IllegalStateException
+                .andExpect(status().isBadRequest()); // 业务异常返回400
     }
 }

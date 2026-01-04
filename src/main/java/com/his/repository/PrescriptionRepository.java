@@ -75,6 +75,31 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
      */
     List<Prescription> findByReviewDoctor_MainIdAndIsDeleted(Long reviewDoctorId, Short isDeleted);
 
+    // ========== 优化查询方法 - 使用 JOIN FETCH 避免 N+1 查询 ==========
+
+    /**
+     * 根据ID查询处方（包含明细）
+     * 使用 JOIN FETCH 避免 N+1 查询问题
+     *
+     * <p><b>注意：</b>此方法目前未在业务代码中使用，保留用于：
+     * <ul>
+     *   <li>未来可能的性能优化场景</li>
+     *   <li>查询优化参考</li>
+     *   <li>调试和分析工具</li>
+     * </ul>
+     *
+     * <p>当前实现使用 {@code PrescriptionDetailRepository} 直接查询明细列表，
+     * 在事务环境中更加可靠，避免了 Hibernate 懒加载的潜在问题。</p>
+     *
+     * <p><b>TODO:</b> 考虑性能基准测试，比较以下两种方案：
+     * <ul>
+     *   <li>单次 JOIN FETCH 查询（此方法）</li>
+     *   <li>两次独立查询（当前实现）</li>
+     * </ul>
+     */
+    @Query("SELECT p FROM Prescription p LEFT JOIN FETCH p.details WHERE p.mainId = :mainId AND p.isDeleted = 0")
+    Optional<Prescription> findByIdWithDetails(@Param("mainId") Long mainId);
+
     /**
      * 统计医生的处方数量
      */
@@ -96,7 +121,19 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
             "WHERE p.dispenseBy = :pharmacistId " +
             "AND p.dispenseTime BETWEEN :startTime AND :endTime " +
             "AND p.isDeleted = 0")
-    com.his.dto.PharmacistStatisticsDTO getPharmacistStatistics(@Param("pharmacistId") Long pharmacistId, 
-                                                                @Param("startTime") LocalDateTime startTime, 
+    com.his.dto.PharmacistStatisticsDTO getPharmacistStatistics(@Param("pharmacistId") Long pharmacistId,
+                                                                @Param("startTime") LocalDateTime startTime,
                                                                 @Param("endTime") LocalDateTime endTime);
+
+    // ========== 编号生成方法 - 使用数据库序列保证线程安全 ==========
+
+    /**
+     * 通过数据库原生函数生成处方号（线程安全）
+     *
+     * <p>使用PostgreSQL序列保证唯一性，格式：PRE + yyyyMMdd + 6位序列</p>
+     *
+     * @return 唯一的处方号
+     */
+    @Query(value = "SELECT generate_prescription_no()", nativeQuery = true)
+    String generatePrescriptionNo();
 }

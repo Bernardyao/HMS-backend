@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions>
+    <!-- 示例：抑制误报 -->
+    <!--
+    <suppress>
+        <notes><![CDATA[
+            False positive - library not actually used
+        ]]></notes>
+        <packageUrl regex="true"/>
+        <cve regex="true"/>
+    </suppress>
+    -->
+</suppressions>

@@ -4,6 +4,9 @@ import com.his.common.Result;
 import com.his.converter.VoConverter;
 import com.his.dto.PrescriptionDTO;
 import com.his.entity.Prescription;
+import com.his.log.annotation.AuditLog;
+import com.his.log.annotation.AuditType;
+import com.his.log.utils.LogUtils;
 import com.his.service.PrescriptionService;
 import com.his.vo.PrescriptionVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +22,30 @@ import java.util.stream.Collectors;
 
 /**
  * 处方管理控制器（医生工作站）
- * 权限：医生和管理员
+ *
+ * <p>负责处方的创建、审核、查询等全生命周期管理</p>
+ *
+ * <h3>主要功能</h3>
+ * <ul>
+ *   <li><b>创建处方</b>：医生根据挂号单开具处方</li>
+ *   <li><b>查询处方</b>：根据挂号单、处方ID查询处方信息</li>
+ *   <li><b>处方提交</b>：将草稿状态的处方提交为正式处方</li>
+ * </ul>
+ *
+ * <h3>角色权限</h3>
+ * <p>本控制器所有接口需要DOCTOR（医生）或ADMIN（管理员）角色</p>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li>处方必须关联有效的挂号单</li>
+ *   <li>已提交的处方不能修改</li>
+ *   <li>处方自动计算总金额</li>
+ * </ul>
+ *
+ * @author HIS 开发团队
+ * @version 1.0
+ * @since 1.0
+ * @see com.his.service.PrescriptionService
  */
 @Tag(name = "医生工作站-处方管理", description = "医生工作站的处方相关接口")
 @Slf4j
@@ -39,18 +65,26 @@ public class PrescriptionController {
      */
     @Operation(summary = "创建处方", description = "根据挂号单ID和药品列表创建处方，自动从数据库读取药品单价并计算总金额")
     @PostMapping("/create")
+    @AuditLog(
+        module = "处方管理",
+        action = "开具处方",
+        description = "医生开具处方",
+        auditType = AuditType.BUSINESS
+    )
     public Result<PrescriptionVO> createPrescription(@RequestBody PrescriptionDTO dto) {
         try {
-            log.info("收到创建处方请求，挂号单ID: {}, 药品数量: {}",
-                    dto.getRegistrationId(), dto.getItems() != null ? dto.getItems().size() : 0);
+            LogUtils.logBusinessOperation("处方管理", "开具处方",
+                    String.format("挂号单: %d, 药品数: %d",
+                            dto.getRegistrationId(),
+                            dto.getItems() != null ? dto.getItems().size() : 0));
             Prescription prescription = prescriptionService.createPrescription(dto);
             PrescriptionVO vo = VoConverter.toPrescriptionVO(prescription);
             return Result.success("处方创建成功", vo);
         } catch (IllegalArgumentException e) {
-            log.warn("创建处方失败: {}", e.getMessage());
+            LogUtils.logValidationError("处方", e.getMessage(), dto.toString());
             return Result.badRequest(e.getMessage());
         } catch (Exception e) {
-            log.error("创建处方失败", e);
+            LogUtils.logSystemError("处方管理", "创建处方失败", e);
             return Result.error("创建失败: " + e.getMessage());
         }
     }
