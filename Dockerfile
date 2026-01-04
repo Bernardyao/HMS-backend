@@ -38,7 +38,9 @@ RUN ./gradlew assemble -x test --no-daemon \
 
 # Step 5: Extract JAR layers for better caching
 # Spring Boot layered JARs allow more efficient Docker layer caching
-RUN java -Djarmode=layertools -jar build/libs/*.jar extract
+# 找到不含 "plain" 的 JAR 文件（Spring Boot fat JAR）
+RUN JAR=$(ls build/libs/*.jar | grep -v plain | head -1) && \
+    java -Djarmode=layertools -jar "$JAR" extract
 
 # ============================================================
 # Stage 2: Runtime - Minimal JRE image
