@@ -17,16 +17,24 @@ COPY build.gradle .
 
 # Step 2: Download dependencies (utilizes Docker layer cache)
 # This only re-runs if dependency configuration changes
+# 限制内存使用避免 OOM
 RUN chmod +x gradlew && \
-    ./gradlew dependencies --no-daemon
+    ./gradlew dependencies --no-daemon \
+    -Dorg.gradle.jvmargs="-Xmx512m -XX:MaxMetaspaceSize=256m"
 
 # Step 3: Copy source code
 # This layer is invalidated when source code changes
 COPY src src
 
 # Step 4: Build application
-# -x test: Skip tests for faster builds (remove for production builds)
-RUN ./gradlew build -x test --no-daemon
+# 跳过测试和代码质量检查以加快构建
+# -x test: Skip tests
+# -x checkstyleMain: Skip checkstyle checks
+# -x pmdMain: Skip PMD checks
+RUN ./gradlew assemble -x test --no-daemon \
+    -Dorg.gradle.jvmargs="-Xmx512m -XX:MaxMetaspaceSize=256m" \
+    -Dorg.gradle.daemon=false \
+    -Dorg.gradle.parallel=false
 
 # Step 5: Extract JAR layers for better caching
 # Spring Boot layered JARs allow more efficient Docker layer caching
