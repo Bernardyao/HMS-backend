@@ -14,9 +14,6 @@ WORKDIR /app
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle .
-COPY settings.gradle .
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
 
 # Step 2: Download dependencies (utilizes Docker layer cache)
 # This only re-runs if dependency configuration changes
