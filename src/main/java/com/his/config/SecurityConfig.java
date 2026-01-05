@@ -109,6 +109,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     // 登录/认证接口：开放
                     .requestMatchers("/auth/**").permitAll()
+                    // Actuator健康检查：开放
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     // Swagger/Knife4j 静态资源与 OpenAPI JSON：开放（文档是否启用由 Knife4jConfig 控制）
                     .requestMatchers(
                         "/doc.html",

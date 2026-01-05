@@ -37,15 +37,17 @@ spring:
     username: ${POSTGRES_USER:his_user}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
-    # HikariCP 连接池配置 - 生产环境优化（减少连接数）
+    # HikariCP 连接池配置 - 生产环境优化
     hikari:
-      minimum-idle: 5
+      minimum-idle: 2                    # 减少初始连接，加快启动
       maximum-pool-size: 15
       idle-timeout: 600000
       max-lifetime: 1800000
-      connection-timeout: 20000
+      connection-timeout: 10000          # 10秒超时（原20秒）
+      initialization-fail-timeout: 30000 # 初始化超时30秒
       connection-test-query: SELECT 1
       leak-detection-threshold: 60000
+      pool-name: HisHikariPool           # 便于日志识别
 
   # JPA/Hibernate 配置 - 生产环境
   jpa:
@@ -78,15 +80,19 @@ app:
     # 启用生产环境警告
     warn-on-production: true
 
-# 日志配置 - 生产环境
+# 日志配置 - 生产环境（优化：显示启动日志）
 logging:
   level:
-    root: WARN
+    root: INFO                           # WARN → INFO，显示启动信息
     com.his: INFO
+    org.springframework.boot: INFO        # 显示Spring Boot启动信息
+    org.flywaydb: INFO                   # 显示Flyway迁移进度
+    com.zaxxer.hikari: INFO              # 显示连接池状态
     org.hibernate.SQL: WARN
     org.springframework.web: WARN
+    org.springframework.security: WARN   # 减少安全日志噪音
   pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
     file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
   file:
     name: logs/his-application.log
@@ -101,4 +107,10 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: never
+      show-details: always           # 允许查看详细健康信息
+      probes:
+        enabled: true                # 启用K8s存活探针支持
+      livenessstate:
+        enabled: true
+      readinessstate:
+        enabled: true

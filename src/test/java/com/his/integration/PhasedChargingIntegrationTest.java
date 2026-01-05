@@ -153,7 +153,7 @@ class PhasedChargingIntegrationTest extends BaseControllerTest {
 
         // Step 4: 支付挂号费
         Long chargeId = chargeRepository.findAll().stream()
-                .filter(c -> c.getRegistration().getMainId().equals(testRegistrationId))
+                .filter(c -> c.getRegistration() != null && c.getRegistration().getMainId().equals(testRegistrationId))
                 .filter(c -> c.getChargeType() == 1) // 挂号费类型
                 .findFirst()
                 .orElseThrow()
@@ -247,7 +247,7 @@ class PhasedChargingIntegrationTest extends BaseControllerTest {
         // Step 7: 支付处方费
         Long chargeId = chargeRepository.findAll().stream()
                 .filter(c -> c.getChargeType() == 2) // 处方费类型
-                .filter(c -> c.getRegistration().getMainId().equals(testRegistrationId))
+                .filter(c -> c.getRegistration() != null && c.getRegistration().getMainId().equals(testRegistrationId))
                 .findFirst()
                 .orElseThrow()
                 .getMainId();

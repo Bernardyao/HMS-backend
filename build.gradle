@@ -20,7 +20,15 @@ configurations.all {
             details.useVersion '2.1.214'
             details.because 'Gradle 8.2 fails to process H2 2.2.224 multi-release JAR'
         }
+        // 排除Janino依赖以加快启动速度
+        if (details.requested.group == 'org.codehaus.janino') {
+            details.useTarget 'org.codehaus.janino:janino:3.1.12'
+            details.because 'Janino causes slow startup, using fixed version'
+        }
     }
+    // 排除Janino相关依赖
+    exclude group: 'org.codehaus.janino', module: 'janino'
+    exclude group: 'org.codehaus.janino', module: 'commons-compiler'
 }
 
 java {

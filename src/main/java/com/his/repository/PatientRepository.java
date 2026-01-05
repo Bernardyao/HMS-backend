@@ -1,6 +1,7 @@
 package com.his.repository;
 
 import com.his.entity.Patient;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -72,6 +73,23 @@ public interface PatientRepository extends JpaRepository<Patient, Long>, JpaSpec
      * 根据ID列表批量查询
      */
     List<Patient> findByMainIdInAndIsDeleted(List<Long> ids, Short isDeleted);
+
+    /**
+     * 组合搜索：根据关键字模糊匹配姓名、身份证号或手机号（护士工作站专用）
+     *
+     * <p>此方法支持三字段联合搜索，用于患者信息自动补全功能</p>
+     *
+     * @param keyword 搜索关键字（支持姓名、身份证号、手机号的模糊匹配）
+     * @param pageable 分页参数（建议限制前15条）
+     * @return 匹配的患者列表，按更新时间降序排列
+     */
+    @Query("SELECT p FROM Patient p WHERE " +
+           "p.isDeleted = 0 AND " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "p.idCard LIKE CONCAT('%', :keyword, '%') OR " +
+           "p.phone LIKE CONCAT('%', :keyword, '%')) " +
+           "ORDER BY p.updatedAt DESC")
+    List<Patient> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     // ========== 编号生成方法 - 使用数据库序列保证线程安全 ==========
 

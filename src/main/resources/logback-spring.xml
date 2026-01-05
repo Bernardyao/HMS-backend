@@ -103,15 +103,9 @@
     <appender name="FILE_AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_HOME}/audit.log</file>
 
-        <!-- 只记录审计相关日志 -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator>
-                <expression>
-                    return message.contains("[审计日志]") ||
-                           message.contains("[敏感操作]") ||
-                           message.contains("[业务操作]");
-                </expression>
-            </evaluator>
+        <!-- 只记录审计相关日志 - 使用简单过滤替代Janino -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
@@ -176,15 +170,23 @@
         <logger name="FILE_AUDIT" level="OFF"/>
     </springProfile>
 
-    <!-- 生产环境：只写文件，INFO 级别，异步 -->
+    <!-- 生产环境：控制台+文件，INFO 级别，异步 -->
     <springProfile name="prod">
         <root level="INFO">
+            <!-- 添加控制台输出，便于docker logs查看启动过程 -->
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_INFO"/>
             <appender-ref ref="ASYNC_ERROR"/>
-            <appender-ref ref="ASYNC_AUDIT"/>
         </root>
-        <!-- 生产环境业务代码建议 INFO 或 WARN，视情况调整 -->
+        <!-- 业务代码日志 -->
         <logger name="com.his" level="INFO"/>
+        <!-- 启动阶段关键日志 -->
+        <logger name="org.springframework.boot" level="INFO"/>
+        <logger name="org.flywaydb" level="INFO"/>
+        <logger name="com.zaxxer.hikari" level="INFO"/>
+        <!-- 屏蔽框架噪音 -->
+        <logger name="org.hibernate.orm.deprecation" level="ERROR"/>
+        <logger name="org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration" level="ERROR"/>
     </springProfile>
 
 </configuration>

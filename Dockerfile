@@ -1,7 +1,6 @@
-# syntax=docker/dockerfile:1
-# Multi-stage build with in-container compilation and BuildKit optimization
-# Build with: DOCKER_BUILDKIT=1 docker build -t his-app .
-# Or with Compose: DOCKER_BUILDKIT=1 docker-compose build
+# Multi-stage build with in-container compilation
+# Build with: docker build -t his-app .
+# Or with Compose: docker-compose build
 
 # ============================================================
 # Stage 1: Builder - Compile application in container
