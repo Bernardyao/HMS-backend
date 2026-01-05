@@ -50,7 +50,7 @@ class AuthControllerTest extends BaseControllerTest {
         testUser.setPassword(passwordEncoder.encode(testPassword));
         testUser.setRealName(testRealName);
         testUser.setRole(testRole);
-        testUser.setStatus(1);
+        testUser.setStatus((short) 1);
         sysUserRepository.save(testUser);
     }
 
@@ -161,7 +161,7 @@ class AuthControllerTest extends BaseControllerTest {
     void testLoginFailure_AccountDisabled() throws Exception {
         // 停用测试账号
         SysUser user = sysUserRepository.findByUsername(testUsername).orElseThrow();
-        user.setStatus(0);
+        user.setStatus((short) 0);
         sysUserRepository.save(user);
 
         LoginRequest request = new LoginRequest();

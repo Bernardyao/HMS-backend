@@ -169,7 +169,7 @@ public class AuthService {
                 });
 
         // 2. 检查用户状态
-        if (user.getStatus() == null || user.getStatus() != 1) {
+        if (user.getStatus() == null || user.getStatus() != (short) 1) {
             log.warn("登录失败：账号已停用，用户名: {}", username);
             throw new RuntimeException("账号已被停用，请联系管理员");
         }

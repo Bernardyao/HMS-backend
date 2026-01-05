@@ -93,6 +93,12 @@ dependencies {
     testImplementation 'com.tngtech.archunit:archunit:1.3.0'
 }
 
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
 // ============================================
 // JaCoCo 代码覆盖率配置
 // ============================================

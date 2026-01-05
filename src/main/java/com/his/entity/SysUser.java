@@ -102,7 +102,7 @@ public class SysUser {
      * 状态（0=停用, 1=启用）
      */
     @Column(name = "status", nullable = false)
-    private Integer status;
+    private Short status;
 
     /**
      * 创建时间

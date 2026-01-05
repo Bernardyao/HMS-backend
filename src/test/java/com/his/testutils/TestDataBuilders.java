@@ -748,7 +748,7 @@ public class TestDataBuilders {
             user.setPassword("$2a$10$encodedPassword");
             user.setRealName("测试用户");
             user.setRole("DOCTOR");
-            user.setStatus(1);
+            user.setStatus((short) 1);
         }
 
         public static SysUserBuilder builder() {
@@ -780,7 +780,7 @@ public class TestDataBuilders {
             return this;
         }
 
-        public SysUserBuilder status(Integer status) {
+        public SysUserBuilder status(Short status) {
             user.setStatus(status);
             return this;
         }
