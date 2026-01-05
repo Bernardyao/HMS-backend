@@ -14,9 +14,9 @@ services:
       # Spring Profile
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
 
-      # Database connection (using host PostgreSQL)
-      # host.docker.internal allows container to reach host machine services
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/${POSTGRES_DB:-his_project}
+      # Database connection (using Docker PostgreSQL)
+      # Using container name for inter-container communication
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-his_project}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-his_user}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
 
@@ -37,34 +37,83 @@ services:
       # Persist logs outside container
       - app_logs:/app/logs
 
-    # Add host.docker.internal for Linux (Docker Desktop has this by default)
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    restart: always
+
+    networks:
+      - his-network
+
+    # Depends on PostgreSQL to ensure database is ready
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # Increased resource limits for better performance
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
+        reservations:
+          memory: 512M
+
+    # Optimized health check for slow-starting applications
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+  # PostgreSQL Database Container
+  postgres:
+    image: postgres:14-alpine
+    container_name: his-postgres
+    environment:
+      # Database configuration
+      POSTGRES_DB: ${POSTGRES_DB:-his_project}
+      POSTGRES_USER: ${POSTGRES_USER:-his_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+
+    volumes:
+      # Persist database data
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize database with SQL scripts (optional)
+      # - ./sql:/docker-entrypoint-initdb.d:ro
+
+    ports:
+      # Only listen on localhost, proxied by Nginx
+      - "127.0.0.1:5432:5432"
 
     restart: always
 
     networks:
       - his-network
 
-    # Resource limits for 2C2G server optimization
+    # Health check for PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-his_user} -d ${POSTGRES_DB:-his_project}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # PostgreSQL resource limits
     deploy:
       resources:
         limits:
           cpus: '0.5'
-          memory: 384M
+          memory: 512M
         reservations:
           memory: 256M
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 60s
 
 # Volumes definition
 volumes:
   app_logs:
+    driver: local
+  postgres_data:
     driver: local
 
 # Networks definition

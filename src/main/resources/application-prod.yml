@@ -6,6 +6,8 @@
 
 server:
   port: 8080
+  # 启用反向代理支持
+  forward-headers-strategy: native
   servlet:
     context-path: /
     session:
@@ -29,19 +31,19 @@ server:
 
 spring:
   # 数据源配置 - 生产环境
-  # 重要：请修改为实际的生产环境数据库配置
+  # 使用Docker容器内的PostgreSQL服务
   datasource:
-    url: jdbc:postgresql://prod-db-server:5432/his_project
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:changeme}
+    url: jdbc:postgresql://postgres:5432/his_project
+    username: ${POSTGRES_USER:his_user}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
-    # HikariCP 连接池配置 - 生产环境优化
+    # HikariCP 连接池配置 - 生产环境优化（减少连接数）
     hikari:
-      minimum-idle: 10
-      maximum-pool-size: 50
+      minimum-idle: 5
+      maximum-pool-size: 15
       idle-timeout: 600000
       max-lifetime: 1800000
-      connection-timeout: 30000
+      connection-timeout: 20000
       connection-test-query: SELECT 1
       leak-detection-threshold: 60000
 
