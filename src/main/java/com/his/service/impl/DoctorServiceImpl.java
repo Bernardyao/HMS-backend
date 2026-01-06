@@ -1,6 +1,7 @@
 package com.his.service.impl;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ import com.his.repository.DoctorRepository;
 import com.his.repository.PatientRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.DoctorService;
+import com.his.service.RegistrationStateMachine;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
 
@@ -49,9 +51,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <h3>业务规则</h3>
  * <ul>
- *   <li>候诊列表仅显示今日、待就诊（WAITING）状态的挂号</li>
+ *   <li>候诊列表显示今日所有活跃状态的挂号：WAITING（待就诊）、PAID_REGISTRATION（已缴挂号费）、IN_CONSULTATION（就诊中）</li>
  *   <li>按排队号升序排列（queueNo ASC）</li>
- *   <li>接诊时只允许从 WAITING 状态更新为 COMPLETED 状态</li>
+ *   <li>接诊时只允许从 WAITING 或 PAID_REGISTRATION 状态更新为 COMPLETED 状态</li>
  *   <li>只能操作今日的挂号记录</li>
  *   <li>医生只能查询和操作自己的挂号记录（权限验证）</li>
  * </ul>
@@ -65,8 +67,8 @@ import lombok.extern.slf4j.Slf4j;
  * </ul>
  *
  * @author HIS 开发团队
- * @version 1.0
- * @since 1.0
+ * @version 2.0
+ * @since 2.0
  * @see com.his.service.DoctorService
  */
 @Slf4j
@@ -78,6 +80,7 @@ public class DoctorServiceImpl implements DoctorService {
     private final DepartmentRepository departmentRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final RegistrationStateMachine registrationStateMachine;
 
     /**
      * 获取今日候诊列表（支持个人/科室混合视图）
@@ -93,8 +96,8 @@ public class DoctorServiceImpl implements DoctorService {
      * <p><b>查询规则：</b></p>
      * <ul>
      *   <li>仅查询今日挂号记录</li>
-     *   <li>仅查询状态为 WAITING（待就诊）的挂号</li>
-     *   <li>按排队号升序排列（queueNo ASC）</li>
+     *   <li>查询活跃患者状态：WAITING（待就诊）、PAID_REGISTRATION（已缴挂号费）、IN_CONSULTATION（就诊中）</li>
+     *   <li>按状态码升序、排队号升序排列</li>
      *   <li>自动过滤已删除的挂号记录</li>
      * </ul>
      *
@@ -144,6 +147,13 @@ public class DoctorServiceImpl implements DoctorService {
 
         List<Registration> registrations;
 
+        // 定义活跃患者状态列表：WAITING（待就诊）、PAID_REGISTRATION（已缴挂号费）、IN_CONSULTATION（就诊中）
+        List<Short> activeStatuses = Arrays.asList(
+                RegStatusEnum.WAITING.getCode(),
+                RegStatusEnum.PAID_REGISTRATION.getCode(),
+                RegStatusEnum.IN_CONSULTATION.getCode()
+        );
+
         if (showAllDept) {
             // 科室视图：查询整个科室的候诊列表
             // 防御性编程2: 验证科室是否存在
@@ -167,13 +177,12 @@ public class DoctorServiceImpl implements DoctorService {
 
             log.info("使用科室视图查询，科室ID: {}, 科室名称: {}", deptId, department.getName());
 
-            // 查询今日、指定科室、待就诊状态的挂号记录，按排队号升序
+            // 查询今日、指定科室、活跃患者状态的挂号记录，按状态码升序、排队号升序
             registrations = registrationRepository
-                    .findByDepartment_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
-                            deptId,
+                    .findByDepartmentAndStatuses(
                             LocalDate.now(),
-                            RegStatusEnum.WAITING.getCode(),
-                            (short) 0
+                            deptId,
+                            activeStatuses
                     );
 
             log.info("科室[{}]查询到 {} 条候诊记录", department.getName(), registrations.size());
@@ -181,13 +190,12 @@ public class DoctorServiceImpl implements DoctorService {
             // 个人视图：仅查询分配给当前医生的候诊列表
             log.info("使用个人视图查询，医生ID: {}", doctorId);
 
-            // 查询今日、指定医生、待就诊状态的挂号记录，按排队号升序
+            // 查询今日、指定医生、活跃患者状态的挂号记录，按状态码升序、排队号升序
             registrations = registrationRepository
-                    .findByDoctor_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
-                            doctorId,
+                    .findByDoctorAndStatuses(
                             LocalDate.now(),
-                            RegStatusEnum.WAITING.getCode(),
-                            (short) 0
+                            doctorId,
+                            activeStatuses
                     );
 
             log.info("医生[ID:{}]查询到 {} 条候诊记录", doctorId, registrations.size());
@@ -259,31 +267,41 @@ public class DoctorServiceImpl implements DoctorService {
             log.warn("无法解析当前状态码: {}", registration.getStatus());
         }
 
-        // 防御性编程5: 状态转换合法性检查
-        if (RegStatusEnum.COMPLETED.equals(newStatus)) {
-            if (!RegStatusEnum.WAITING.getCode().equals(registration.getStatus())) {
-                log.warn("更新挂号状态失败: 非法状态转换，挂号ID: {}, 当前状态: {}, 目标状态: {}",
-                        regId, currentStatusDesc, newStatus.getDescription());
-                throw new IllegalStateException(
-                        String.format("只有[待就诊]状态的挂号才能接诊，当前状态: [%s]", currentStatusDesc)
-                );
-            }
-        }
-
-        // 防御性编程6: 不能更新为相同状态
+        // 防御性编程5: 如果状态已经是一致的，直接返回成功（幂等性）
         if (registration.getStatus() != null && registration.getStatus().equals(newStatus.getCode())) {
-            log.warn("更新挂号状态失败: 状态未变化，挂号ID: {}, 当前状态: {}", regId, currentStatusDesc);
-            throw new IllegalStateException(
-                    String.format("挂号记录已经是[%s]状态，无需重复操作", currentStatusDesc)
-            );
+            log.info("挂号状态更新请求：状态未变化，挂号ID: {}, 当前状态: {}", regId, currentStatusDesc);
+            return;
         }
 
-        // 更新状态
-        registration.setStatus(newStatus.getCode());
-        registrationRepository.save(registration);
+        // 【关键修复】使用状态机更新状态，确保审计日志和状态转换验证
+        try {
+            // 获取当前用户信息
+            Long operatorId = null;
+            String operatorName = "SYSTEM";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+            }
 
-        log.info("挂号状态更新成功，挂号ID: {}, 原状态: {}, 新状态: {}",
-                regId, currentStatusDesc, newStatus.getDescription());
+            // 调用状态机进行状态转换（自动验证合法性并记录审计日志）
+            registrationStateMachine.transition(
+                regId,
+                RegStatusEnum.fromCode(registration.getStatus()),
+                newStatus,
+                operatorId,
+                operatorName,
+                "医生工作站更新状态"
+            );
+
+            log.info("挂号状态通过状态机更新成功，挂号ID: {}, 原状态: {}, 新状态: {}",
+                    regId, currentStatusDesc, newStatus.getDescription());
+        } catch (Exception e) {
+            log.error("状态机转换失败，挂号ID: {}, 原状态: {}, 新状态: {}",
+                    regId, currentStatusDesc, newStatus.getDescription(), e);
+            throw new IllegalStateException("状态转换失败: " + e.getMessage());
+        }
     }
 
     /**

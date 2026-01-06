@@ -154,6 +154,13 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
                 .orElse(null);
 
         if (medicalRecord != null) {
+            // 业务校验：已提交或已审核的病历不允许再修改，必须维持医疗记录的严肃性
+            if (medicalRecord.getStatus() != 0) {
+                log.warn("保存/更新病历被拒绝：病历已提交或已审核，ID: {}, 当前状态: {}",
+                        medicalRecord.getMainId(), medicalRecord.getStatus());
+                throw new IllegalStateException("已提交或已审核的病历不允许修改");
+            }
+
             // 更新现有病历
             log.info("找到现有病历，ID: {}，进行更新", medicalRecord.getMainId());
             updateMedicalRecord(medicalRecord, dto);
@@ -298,6 +305,12 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         log.info("提交病历，ID: {}", id);
 
         MedicalRecord record = getById(id);
+
+        // 幂等处理：如果病历已经提交，则直接返回成功，避免重复点击报错
+        if (record.getStatus() == 1) {
+            log.info("病历已处于提交状态，无需重复操作，ID: {}", id);
+            return;
+        }
 
         if (record.getStatus() != 0) {
             throw new IllegalStateException("只有草稿状态的病历才能提交");

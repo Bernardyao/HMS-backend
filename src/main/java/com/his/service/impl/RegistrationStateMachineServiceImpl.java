@@ -79,7 +79,8 @@ public class RegistrationStateMachineServiceImpl implements RegistrationStateMac
         RegStatusEnum.WAITING, EnumSet.of(
             RegStatusEnum.IN_CONSULTATION,
             RegStatusEnum.CANCELLED,
-            RegStatusEnum.PAID_REGISTRATION
+            RegStatusEnum.PAID_REGISTRATION,
+            RegStatusEnum.COMPLETED
         ),
         RegStatusEnum.PAID_REGISTRATION, EnumSet.of(
             RegStatusEnum.IN_CONSULTATION,

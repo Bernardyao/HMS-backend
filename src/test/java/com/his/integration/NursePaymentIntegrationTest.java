@@ -76,12 +76,6 @@ class NursePaymentIntegrationTest extends BaseControllerTest {
     @Autowired
     private ChargeRepository chargeRepository;
 
-    @Autowired
-    private RegistrationStatusHistoryRepository registrationStatusHistoryRepository;
-
-    private Long testPatientId;
-    private Long testDepartmentId;
-    private Long testDoctorId;
     private Long testRegistrationId;
 
     @BeforeEach
@@ -95,7 +89,6 @@ class NursePaymentIntegrationTest extends BaseControllerTest {
         dept.setStatus((short) 1);
         dept.setIsDeleted((short) 0);
         dept = departmentRepository.save(dept);
-        testDepartmentId = dept.getMainId();
 
         Doctor doctor = new Doctor();
         doctor.setDoctorNo("DOC" + uid);
@@ -106,7 +99,6 @@ class NursePaymentIntegrationTest extends BaseControllerTest {
         doctor.setStatus((short) 1);
         doctor.setIsDeleted((short) 0);
         doctor = doctorRepository.save(doctor);
-        testDoctorId = doctor.getMainId();
 
         Patient patient = new Patient();
         patient.setPatientNo("P" + uid);
@@ -117,7 +109,6 @@ class NursePaymentIntegrationTest extends BaseControllerTest {
         patient.setBirthDate(LocalDate.of(1990, 1, 1));
         patient.setIsDeleted((short) 0);
         patient = patientRepository.save(patient);
-        testPatientId = patient.getMainId();
 
         // 创建挂号单（状态为 WAITING）
         Registration registration = new Registration();

@@ -20,6 +20,7 @@ import com.his.repository.ChargeRepository;
 import com.his.repository.PrescriptionRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.PrescriptionService;
+import com.his.service.RegistrationStateMachine;
 import com.his.test.base.BaseServiceTest;
 import com.his.vo.ChargeVO;
 
@@ -41,6 +42,8 @@ class ChargeServiceImplTest extends BaseServiceTest {
     private PrescriptionRepository prescriptionRepository;
     @Mock
     private PrescriptionService prescriptionService;
+    @Mock
+    private RegistrationStateMachine registrationStateMachine;
     @Mock
     private com.his.monitoring.SequenceGenerationMetrics sequenceMetrics;
     @Mock
@@ -495,15 +498,25 @@ class ChargeServiceImplTest extends BaseServiceTest {
 
         when(chargeRepository.findByIdWithDetails(chargeId)).thenReturn(Optional.of(charge));
         when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // When
         ChargeVO result = chargeService.processPayment(chargeId, paymentDTO);
 
         // Then
         assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.PAID.getCode());
-        verify(registrationRepository).save(argThat(r ->
-                r.getStatus().equals(RegStatusEnum.PAID_REGISTRATION.getCode())));
+        // 验证状态机被调用，而不是直接调用repository.save
+        try {
+            verify(registrationStateMachine).transition(
+                    eq(1L),
+                    eq(RegStatusEnum.WAITING),
+                    eq(RegStatusEnum.PAID_REGISTRATION),
+                    any(), // 可以是 null
+                    anyString(),
+                    anyString()
+            );
+        } catch (Exception e) {
+            // Should not happen in test mock
+        }
     }
 
     @Test

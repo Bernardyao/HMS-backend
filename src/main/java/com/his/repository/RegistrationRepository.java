@@ -112,6 +112,36 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     List<Registration> findByDoctor_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
             Long doctorId, LocalDate visitDate, Short status, Short isDeleted);
 
+    /**
+     * 查询指定科室、指定日期、多个状态的挂号记录，按排队号升序排列（医生工作站 - 科室视图）
+     * 用于医生查看候诊列表，包含待就诊和已缴费状态的患者
+     */
+    @Query("SELECT r FROM Registration r WHERE r.visitDate = :date " +
+           "AND r.department.mainId = :deptId " +
+           "AND r.status IN :statuses " +
+           "AND r.isDeleted = 0 " +
+           "ORDER BY r.queueNo ASC")
+    List<Registration> findByDepartmentAndStatuses(
+            @Param("date") LocalDate date,
+            @Param("deptId") Long deptId,
+            @Param("statuses") List<Short> statuses
+    );
+
+    /**
+     * 查询指定医生、指定日期、多个状态的挂号记录，按排队号升序排列（医生工作站 - 个人视图）
+     * 用于医生查看候诊列表，包含待就诊和已缴费状态的患者
+     */
+    @Query("SELECT r FROM Registration r WHERE r.visitDate = :date " +
+           "AND r.doctor.mainId = :doctorId " +
+           "AND r.status IN :statuses " +
+           "AND r.isDeleted = 0 " +
+           "ORDER BY r.queueNo ASC")
+    List<Registration> findByDoctorAndStatuses(
+            @Param("date") LocalDate date,
+            @Param("doctorId") Long doctorId,
+            @Param("statuses") List<Short> statuses
+    );
+
     // ========== 编号生成方法 - 使用数据库序列保证线程安全 ==========
 
     /**

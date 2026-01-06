@@ -13,6 +13,7 @@ import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -287,13 +288,15 @@ class MedicalRecordControllerTest extends BaseControllerTest {
     @DisplayName("提交病历 - 成功")
     @WithMockUser(roles = "DOCTOR")
     void testSubmitMedicalRecord_Success() throws Exception {
-        // Given: 准备病历ID (void method, no need to mock)
+        // Given: 准备病历ID (void method, no need to mock, but doNothing for clarity)
+        // 使用独立ID 10  避免干扰
+        doNothing().when(medicalRecordService).submit(10L);
+
         // When & Then
-        mockMvc.perform(post("/api/doctor/medical-records/1/submit"))
+        mockMvc.perform(post("/api/doctor/medical-records/10/submit"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("提交成功"));
-                // Note: data字段为null时可能不会被序列化
     }
 
     @Test
@@ -312,18 +315,18 @@ class MedicalRecordControllerTest extends BaseControllerTest {
     }
 
     @Test
-    @DisplayName("提交病历 - 已提交过")
+    @DisplayName("提交病历 - 已提交过（幂等处理）")
     @WithMockUser(roles = "DOCTOR")
     void testSubmitMedicalRecord_AlreadySubmitted() throws Exception {
-        // Given: 病历已提交
-        doThrow(new IllegalStateException("病历已提交，无法重复提交"))
-                .when(medicalRecordService).submit(1L);
+        // Given: 根据新逻辑，服务层对已提交状态进行幂等处理，返回成功
+        // 使用独立ID 11 避免干扰
+        doNothing().when(medicalRecordService).submit(11L);
 
         // When & Then
-        mockMvc.perform(post("/api/doctor/medical-records/1/submit"))
+        mockMvc.perform(post("/api/doctor/medical-records/11/submit"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("病历已提交，无法重复提交"));
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("提交成功"));
     }
 
     @Test
@@ -331,11 +334,12 @@ class MedicalRecordControllerTest extends BaseControllerTest {
     @WithMockUser(roles = "DOCTOR")
     void testSubmitMedicalRecord_SystemException() throws Exception {
         // Given: 系统异常
+        // 使用独立ID 12 避免干扰
         doThrow(new RuntimeException("数据库更新失败"))
-                .when(medicalRecordService).submit(1L);
+                .when(medicalRecordService).submit(12L);
 
         // When & Then
-        mockMvc.perform(post("/api/doctor/medical-records/1/submit"))
+        mockMvc.perform(post("/api/doctor/medical-records/12/submit"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value(containsString("提交失败")));
