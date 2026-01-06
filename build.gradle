@@ -339,4 +339,7 @@ dependencyCheck {
     suppressionFile = 'config/dependency-check/suppressions.xml'
     failBuildOnCVSS = 7.0  // HIGH 及以上级别失败
     analyzedTypes = ['jar']
+
+    // 国内环境优化：简化配置，避免NVD连接问题
+    // 构建失败时，可使用环境变量跳过：export DEPENDENCY_CHECK_SKIP_JNI=true
 }

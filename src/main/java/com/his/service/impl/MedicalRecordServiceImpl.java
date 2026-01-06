@@ -6,11 +6,11 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.his.common.CommonConstants;
 import com.his.dto.MedicalRecordDTO;
 import com.his.entity.MedicalRecord;
 import com.his.entity.Registration;
 import com.his.enums.MedicalRecordStatusEnum;
-import com.his.common.CommonConstants;
 import com.his.repository.MedicalRecordRepository;
 import com.his.repository.RegistrationRepository;
 
