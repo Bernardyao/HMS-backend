@@ -1,17 +1,18 @@
 package com.his.integration;
 
-import com.his.entity.*;
-import com.his.repository.*;
-import com.his.service.impl.RegistrationServiceImpl;
-import com.his.test.base.BaseIntegrationTest;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.concurrent.atomic.AtomicLong;
+import com.his.entity.*;
+import com.his.repository.*;
+import com.his.service.impl.RegistrationServiceImpl;
+import com.his.test.base.BaseIntegrationTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;

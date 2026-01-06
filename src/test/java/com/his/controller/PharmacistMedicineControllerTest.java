@@ -1,13 +1,14 @@
 package com.his.controller;
 
-import com.his.dto.InventoryStatsVO;
-import com.his.service.MedicineService;
-import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+
+import com.his.dto.InventoryStatsVO;
+import com.his.service.MedicineService;
+import com.his.test.base.BaseControllerTest;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

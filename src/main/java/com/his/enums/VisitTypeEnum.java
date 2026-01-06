@@ -4,17 +4,17 @@ package com.his.enums;
  * 就诊类型枚举
  */
 public enum VisitTypeEnum {
-    
+
     /**
      * 初诊
      */
     FIRST((short) 1, "初诊"),
-    
+
     /**
      * 复诊
      */
     FOLLOWUP((short) 2, "复诊"),
-    
+
     /**
      * 急诊
      */

@@ -1,17 +1,18 @@
 package com.his.controller;
 
-import com.his.config.JwtAuthenticationToken;
-import com.his.entity.*;
-import com.his.repository.*;
-import com.his.test.base.BaseControllerTest;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+
+import com.his.config.JwtAuthenticationToken;
+import com.his.entity.*;
+import com.his.repository.*;
+import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -139,7 +140,7 @@ class PharmacistWorkstationIntegrationTest extends BaseControllerTest {
         detail.setSubtotal(new BigDecimal("20.00"));
         detail.setIsDeleted((short) 0);
         detail = prescriptionDetailRepository.save(detail);
-        
+
         List<PrescriptionDetail> details = new ArrayList<>();
         details.add(detail);
         prescription.setDetails(details);

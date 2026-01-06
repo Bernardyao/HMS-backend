@@ -1,10 +1,11 @@
 package com.his.config;
 
-import lombok.Getter;
+import java.util.Collections;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.Collections;
+import lombok.Getter;
 
 /**
  * JWT认证Token

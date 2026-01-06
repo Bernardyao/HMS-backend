@@ -1,15 +1,17 @@
 package com.his.config;
 
-import com.his.entity.SysUser;
-import com.his.repository.SysUserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import com.his.entity.SysUser;
+import com.his.repository.SysUserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 密码初始化器
@@ -107,28 +109,28 @@ public class PasswordInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         log.info("=== 开始检查系统用户密码 ===");
-        
+
         try {
             List<SysUser> users = sysUserRepository.findAll();
             int fixedCount = 0;
-            
+
             for (SysUser user : users) {
                 if (needsPasswordReset(user)) {
                     String newHash = passwordEncoder.encode(DEFAULT_PASSWORD);
                     user.setPassword(newHash);
                     sysUserRepository.save(user);
                     fixedCount++;
-                    log.warn("已重置用户密码 - 用户名: {}, 角色: {}, 新密码: {}", 
+                    log.warn("已重置用户密码 - 用户名: {}, 角色: {}, 新密码: {}",
                             user.getUsername(), user.getRole(), DEFAULT_PASSWORD);
                 }
             }
-            
+
             if (fixedCount > 0) {
                 log.warn("=== 密码初始化完成：已修复 {} 个用户的密码，默认密码: {} ===", fixedCount, DEFAULT_PASSWORD);
             } else {
                 log.info("=== 密码检查完成：所有用户密码正常 ===");
             }
-            
+
         } catch (Exception e) {
             log.error("密码初始化失败", e);
         }
@@ -168,25 +170,25 @@ public class PasswordInitializer implements CommandLineRunner {
      */
     private boolean needsPasswordReset(SysUser user) {
         String password = user.getPassword();
-        
+
         // 检查1：密码为空
         if (password == null || password.trim().isEmpty()) {
             log.warn("用户 {} 密码为空", user.getUsername());
             return true;
         }
-        
+
         // 检查2：长度不正确（BCrypt应该是59-60字符）
         if (password.length() < 59 || password.length() > 60) {
             log.warn("用户 {} 密码长度异常，需要重置", user.getUsername());
             return true;
         }
-        
+
         // 检查3：格式不正确
         if (!password.startsWith("$2a$") && !password.startsWith("$2b$")) {
             log.warn("用户 {} 密码格式异常，需要重置", user.getUsername());
             return true;
         }
-        
+
         // 检查4：验证测试（使用默认密码测试）
         try {
             if (passwordEncoder.matches(DEFAULT_PASSWORD, password)) {

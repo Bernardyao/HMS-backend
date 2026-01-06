@@ -1,7 +1,7 @@
 package com.his.config;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -18,7 +18,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Spring Security 生产环境安全配置类
@@ -101,10 +102,10 @@ public class SecurityConfig {
         http
                 // 禁用 CSRF（前后端分离项目使用 JWT，不需要 CSRF 保护）
                 .csrf(AbstractHttpConfigurer::disable)
-                
+
                 // 配置 CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                
+
                 // 配置请求授权
                 .authorizeHttpRequests(auth -> auth
                     // 登录/认证接口：开放
@@ -123,18 +124,18 @@ public class SecurityConfig {
                     // 其余接口：需要认证
                     .anyRequest().authenticated()
                 )
-                
+
                 // 配置会话管理：无状态（使用 JWT，不需要 Session）
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                
+
                 // 禁用默认的登录页面
                 .formLogin(AbstractHttpConfigurer::disable)
-                
+
                 // 禁用 HTTP Basic 认证
                 .httpBasic(AbstractHttpConfigurer::disable)
-                
+
                 // 添加 JWT 认证过滤器
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -195,22 +196,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // 允许所有来源（生产环境建议指定具体域名）
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        
+
         // 允许所有请求方法
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
+
         // 允许所有请求头
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        
+
         // 允许发送 Cookie
         configuration.setAllowCredentials(true);
-        
+
         // 暴露的响应头
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        
+
         // 预检请求的有效期（秒）
         configuration.setMaxAge(3600L);
 

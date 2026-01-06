@@ -1,6 +1,7 @@
 package com.his.enums;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class EnumTest {
@@ -10,7 +11,7 @@ class EnumTest {
         assertEquals("草稿", PrescriptionStatusEnum.DRAFT.getDescription());
         assertEquals((short) 5, PrescriptionStatusEnum.PAID.getCode());
         assertEquals(PrescriptionStatusEnum.PAID, PrescriptionStatusEnum.fromCode((short) 5));
-        
+
         assertThrows(IllegalArgumentException.class, () -> PrescriptionStatusEnum.fromCode((short) 99));
     }
 

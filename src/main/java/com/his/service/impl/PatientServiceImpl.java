@@ -1,19 +1,21 @@
 package com.his.service.impl;
 
-import com.his.entity.Patient;
-import com.his.enums.GenderEnum;
-import com.his.repository.PatientRepository;
-import com.his.service.PatientService;
-import com.his.vo.PatientSearchVO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.his.entity.Patient;
+import com.his.enums.GenderEnum;
+import com.his.repository.PatientRepository;
+import com.his.service.PatientService;
+import com.his.vo.PatientSearchVO;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 患者服务实现类

@@ -1,8 +1,8 @@
 package com.his.service;
 
-import com.his.entity.AuditLogEntity;
-
 import java.util.concurrent.CompletableFuture;
+
+import com.his.entity.AuditLogEntity;
 
 /**
  * 审计日志服务接口

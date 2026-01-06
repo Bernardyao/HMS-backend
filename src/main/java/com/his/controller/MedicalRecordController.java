@@ -1,18 +1,21 @@
 package com.his.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.converter.VoConverter;
 import com.his.dto.MedicalRecordDTO;
 import com.his.entity.MedicalRecord;
 import com.his.service.MedicalRecordService;
 import com.his.vo.MedicalRecordVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * 病历管理控制器（医生工作站）

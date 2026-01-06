@@ -1,5 +1,8 @@
 package com.his.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.converter.VoConverter;
 import com.his.dto.PrescriptionDTO;
@@ -8,13 +11,13 @@ import com.his.log.annotation.AuditLog;
 import com.his.log.annotation.AuditType;
 import com.his.service.PrescriptionService;
 import com.his.vo.PrescriptionVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * 处方管理控制器（医生工作站）

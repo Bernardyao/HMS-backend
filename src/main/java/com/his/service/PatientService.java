@@ -1,8 +1,8 @@
 package com.his.service;
 
-import com.his.vo.PatientSearchVO;
-
 import java.util.List;
+
+import com.his.vo.PatientSearchVO;
 
 /**
  * 患者服务接口

@@ -1,10 +1,11 @@
 package com.his.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.LocalDate;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import lombok.Data;
 
 /**
  * 护士工作站查询参数数据传输对象

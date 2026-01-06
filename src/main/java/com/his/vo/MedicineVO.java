@@ -1,14 +1,15 @@
 package com.his.vo;
 
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * 药品视图对象（统一版本，支持JsonView）
@@ -47,49 +48,49 @@ public class MedicineVO {
     /**
      * 药品ID
      */
-    
+
     @Schema(description = "药品ID", example = "1")
     private Long mainId;
 
     /**
      * 药品编码
      */
-    
+
     @Schema(description = "药品编码", example = "MED001")
     private String medicineCode;
 
     /**
      * 药品名称
      */
-    
+
     @Schema(description = "药品名称", example = "阿莫西林胶囊")
     private String name;
 
     /**
      * 通用名称
      */
-    
+
     @Schema(description = "通用名称", example = "阿莫西林")
     private String genericName;
 
     /**
      * 零售价格
      */
-    
+
     @Schema(description = "零售价格（元）", example = "25.80")
     private BigDecimal retailPrice;
 
     /**
      * 库存数量
      */
-    
+
     @Schema(description = "库存数量", example = "100")
     private Integer stockQuantity;
 
     /**
      * 药品分类
      */
-    
+
     @Schema(description = "药品分类", example = "抗生素")
     private String category;
 
@@ -142,35 +143,35 @@ public class MedicineVO {
     /**
      * 规格
      */
-    
+
     @Schema(description = "规格", example = "0.25g*24粒")
     private String specification;
 
     /**
      * 单位
      */
-    
+
     @Schema(description = "单位", example = "盒")
     private String unit;
 
     /**
      * 剂型
      */
-    
+
     @Schema(description = "剂型", example = "胶囊")
     private String dosageForm;
 
     /**
      * 生产厂家
      */
-    
+
     @Schema(description = "生产厂家", example = "XX制药")
     private String manufacturer;
 
     /**
      * 库存状态（自动计算）
      */
-    
+
     @Schema(description = "库存状态", example = "IN_STOCK",
             allowableValues = {"IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"})
     private String stockStatus;
@@ -180,63 +181,63 @@ public class MedicineVO {
     /**
      * 进货价格（敏感）
      */
-    
+
     @Schema(description = "进货价格（元）", example = "18.50")
     private BigDecimal purchasePrice;
 
     /**
      * 最低库存（预警线）
      */
-    
+
     @Schema(description = "最低库存（预警线）", example = "50")
     private Integer minStock;
 
     /**
      * 最高库存（上限）
      */
-    
+
     @Schema(description = "最高库存（上限）", example = "500")
     private Integer maxStock;
 
     /**
      * 储存条件
      */
-    
+
     @Schema(description = "储存条件", example = "密闭，在阴凉干燥处保存")
     private String storageCondition;
 
     /**
      * 批准文号
      */
-    
+
     @Schema(description = "批准文号", example = "国药准字H12345678")
     private String approvalNo;
 
     /**
      * 过期预警天数
      */
-    
+
     @Schema(description = "过期预警天数", example = "90")
     private Integer expiryWarningDays;
 
     /**
      * 利润率（%）
      */
-    
+
     @Schema(description = "利润率（%）", example = "39.46")
     private BigDecimal profitMargin;
 
     /**
      * 创建时间
      */
-    
+
     @Schema(description = "创建时间", example = "2023-01-01T10:00:00")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    
+
     @Schema(description = "更新时间", example = "2023-12-01T15:30:00")
     private LocalDateTime updatedAt;
 }

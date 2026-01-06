@@ -1,13 +1,15 @@
 package com.his.entity;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.persistence.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 电子病历实体类

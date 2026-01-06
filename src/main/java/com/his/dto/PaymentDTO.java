@@ -1,11 +1,13 @@
 package com.his.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
-import lombok.Data;
+import java.math.BigDecimal;
 
 import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+
+import lombok.Data;
 
 /**
  * 支付请求数据传输对象

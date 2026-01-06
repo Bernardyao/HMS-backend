@@ -1,5 +1,14 @@
 package com.his.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Optional;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import com.his.dto.RegistrationDTO;
 import com.his.entity.Charge;
 import com.his.entity.Department;
@@ -18,14 +27,6 @@ import com.his.test.base.BaseServiceTest;
 import com.his.testutils.TestDataBuilders;
 import com.his.vo.ChargeVO;
 import com.his.vo.RegistrationVO;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

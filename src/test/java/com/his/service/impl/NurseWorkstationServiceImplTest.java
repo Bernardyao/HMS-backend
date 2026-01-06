@@ -1,5 +1,16 @@
 package com.his.service.impl;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import com.his.dto.NurseWorkstationDTO;
 import com.his.entity.Department;
 import com.his.entity.Doctor;
@@ -12,16 +23,6 @@ import com.his.enums.VisitTypeEnum;
 import com.his.repository.RegistrationRepository;
 import com.his.test.base.BaseServiceTest;
 import com.his.vo.NurseRegistrationVO;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

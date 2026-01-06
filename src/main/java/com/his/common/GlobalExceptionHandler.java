@@ -1,26 +1,28 @@
 package com.his.common;
 
-import com.his.exception.BusinessException;
-import com.his.exception.BusinessRuntimeException;
-import com.his.log.utils.LogUtils;
-import com.his.monitoring.AlertService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.his.exception.BusinessException;
+import com.his.exception.BusinessRuntimeException;
+import com.his.log.utils.LogUtils;
+import com.his.monitoring.AlertService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 全局异常处理器
@@ -91,7 +93,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleValidationException(
             MethodArgumentNotValidException e,
             HttpServletRequest request) {
-        
+
         String errorMsg = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .reduce((a, b) -> a + "; " + b)
@@ -110,7 +112,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleTypeMismatchException(
             MethodArgumentTypeMismatchException e,
             HttpServletRequest request) {
-        
+
         String errorMsg = String.format("参数'%s'类型错误，期望类型: %s",
                 e.getName(),
                 e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "未知");
@@ -175,7 +177,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleAccessDeniedException(
             Exception e,
             HttpServletRequest request) {
-        
+
         log.warn("权限不足: {}, 请求路径: {}, 用户可能未登录或角色不匹配", e.getMessage(), request.getRequestURI());
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
@@ -189,10 +191,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleMethodNotSupportedException(
             HttpRequestMethodNotSupportedException e,
             HttpServletRequest request) {
-        
-        log.warn("HTTP方法不支持: {} {}, 支持的方法: {}", 
+
+        log.warn("HTTP方法不支持: {} {}, 支持的方法: {}",
                 request.getMethod(), request.getRequestURI(), e.getSupportedHttpMethods());
-        
+
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(Result.error("HTTP方法不支持：" + e.getMessage()));
@@ -205,7 +207,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleNotFoundException(
             NoHandlerFoundException e,
             HttpServletRequest request) {
-        
+
         log.warn("资源未找到: {} {}", request.getMethod(), request.getRequestURI());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
@@ -219,14 +221,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleMediaTypeNotAcceptableException(
             HttpMediaTypeNotAcceptableException e,
             HttpServletRequest request) {
-        
-        log.error("Content-Type协商失败: {}, 请求路径: {}, Accept: {}", 
+
+        log.error("Content-Type协商失败: {}, 请求路径: {}, Accept: {}",
                 e.getMessage(), request.getRequestURI(), request.getHeader("Accept"));
-        
+
         // 这是关键错误 - 可能导致返回错误的Content-Type
         log.error("⚠⚠⚠ 警告：Content-Type协商失败可能导致返回错误的响应格式（如Knife4j.txt）");
         log.error("支持的MediaTypes: {}", e.getSupportedMediaTypes());
-        
+
         return ResponseEntity
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .body(Result.error("不支持的Content-Type：" + e.getMessage()));
@@ -239,7 +241,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleAuthenticationException(
             org.springframework.security.core.AuthenticationException e,
             HttpServletRequest request) {
-        
+
         log.warn("认证失败: {}, 请求路径: {}", e.getMessage(), request.getRequestURI());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
@@ -416,7 +418,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(result);
     }
-    
+
     /**
      * 处理空指针异常
      */
@@ -424,17 +426,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleNullPointerException(
             NullPointerException e,
             HttpServletRequest request) {
-        
+
         log.error("空指针异常: 请求路径: {}", request.getRequestURI(), e);
-        
+
         // 获取堆栈信息中的关键位置
         String location = "未知位置";
         if (e.getStackTrace() != null && e.getStackTrace().length > 0) {
             StackTraceElement element = e.getStackTrace()[0];
-            location = element.getClassName() + "." + element.getMethodName() + 
+            location = element.getClassName() + "." + element.getMethodName() +
                       "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
         }
-        
+
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Result.error(500, "系统错误：空指针异常。错误位置：" + location));

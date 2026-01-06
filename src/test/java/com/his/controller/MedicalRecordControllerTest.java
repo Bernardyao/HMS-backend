@@ -1,14 +1,15 @@
 package com.his.controller;
 
-import com.his.dto.MedicalRecordDTO;
-import com.his.entity.MedicalRecord;
-import com.his.service.MedicalRecordService;
-import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+
+import com.his.dto.MedicalRecordDTO;
+import com.his.entity.MedicalRecord;
+import com.his.service.MedicalRecordService;
+import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;

@@ -4,22 +4,22 @@ package com.his.enums;
  * 挂号状态枚举
  */
 public enum RegStatusEnum {
-    
+
     /**
      * 待就诊
      */
     WAITING((short) 0, "待就诊"),
-    
+
     /**
      * 已就诊
      */
     COMPLETED((short) 1, "已就诊"),
-    
+
     /**
      * 已取消
      */
     CANCELLED((short) 2, "已取消"),
-    
+
     /**
      * 已退费
      */

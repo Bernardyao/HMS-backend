@@ -1,10 +1,10 @@
 package com.his.service.impl;
 
-import com.his.dto.RegistrationDTO;
-import com.his.entity.*;
-import com.his.repository.*;
-import com.his.service.ChargeService;
-import com.his.test.base.BaseServiceTest;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -12,10 +12,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import com.his.dto.RegistrationDTO;
+import com.his.entity.*;
+import com.his.repository.*;
+import com.his.service.ChargeService;
+import com.his.test.base.BaseServiceTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

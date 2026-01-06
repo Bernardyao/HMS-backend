@@ -1,9 +1,9 @@
 package com.his.service;
 
+import java.util.List;
+
 import com.his.dto.NurseWorkstationDTO;
 import com.his.vo.NurseRegistrationVO;
-
-import java.util.List;
 
 /**
  * 护士工作站服务接口

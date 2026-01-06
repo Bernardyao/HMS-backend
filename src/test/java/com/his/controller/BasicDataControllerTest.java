@@ -1,14 +1,15 @@
 package com.his.controller;
 
-import com.his.entity.Department;
-import com.his.entity.Doctor;
-import com.his.repository.*;
-import com.his.test.base.BaseControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+
+import com.his.entity.Department;
+import com.his.entity.Doctor;
+import com.his.repository.*;
+import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,22 +32,22 @@ class BasicDataControllerTest extends BaseControllerTest {
 
     @Autowired
     private ChargeDetailRepository chargeDetailRepository;
-    
+
     @Autowired
     private ChargeRepository chargeRepository;
-    
+
     @Autowired
     private PrescriptionDetailRepository prescriptionDetailRepository;
-    
+
     @Autowired
     private PrescriptionRepository prescriptionRepository;
-    
+
     @Autowired
     private MedicalRecordRepository medicalRecordRepository;
-    
+
     @Autowired
     private RegistrationRepository registrationRepository;
-    
+
     @Autowired
     private PatientRepository patientRepository;
 

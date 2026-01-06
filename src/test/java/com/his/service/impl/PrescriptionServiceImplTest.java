@@ -1,18 +1,19 @@
 package com.his.service.impl;
 
+import java.util.Collections;
+import java.util.Optional;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import com.his.entity.Medicine;
 import com.his.entity.Prescription;
 import com.his.entity.PrescriptionDetail;
 import com.his.enums.PrescriptionStatusEnum;
 import com.his.repository.*;
 import com.his.test.base.BaseServiceTest;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.util.Collections;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -56,15 +57,15 @@ class PrescriptionServiceImplTest extends BaseServiceTest {
         Long prescriptionId = 1L;
         Prescription prescription = new Prescription();
         prescription.setMainId(prescriptionId);
-        
+
         Medicine medicine = new Medicine();
         medicine.setMainId(10L);
         medicine.setStockQuantity(100);
-        
+
         PrescriptionDetail detail = new PrescriptionDetail();
         detail.setMedicine(medicine);
         detail.setQuantity(10);
-        
+
         prescription.setDetails(Collections.singletonList(detail));
 
         when(prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(prescriptionId, (short) 0))

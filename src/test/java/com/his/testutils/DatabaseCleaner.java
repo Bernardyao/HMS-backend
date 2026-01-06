@@ -1,10 +1,10 @@
 package com.his.testutils;
 
+import java.util.List;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
-
-import java.util.List;
 
 /**
  * 测试数据清理工具类

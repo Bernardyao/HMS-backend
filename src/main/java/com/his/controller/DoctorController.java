@@ -1,5 +1,10 @@
 package com.his.controller;
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.common.SecurityUtils;
 import com.his.entity.Doctor;
@@ -7,15 +12,13 @@ import com.his.enums.RegStatusEnum;
 import com.his.service.DoctorService;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 医生工作站控制器
@@ -80,10 +83,10 @@ public class DoctorController {
 
     /**
      * 查询今日候诊列表（支持个人/科室视图）
-     * 
+     *
      * <p><b>【安全特性】</b>强制从 JWT Token 获取医生ID，防止水平越权（IDOR）攻击。
      * 医生只能查看自己或本科室的候诊患者。
-     * 
+     *
      * <p><b>【管理员特权】</b>管理员可以通过 adminDoctorId 参数指定要查看的医生。
      *
      * @param showAll 是否显示科室所有患者（false=个人视图，true=科室视图）
@@ -160,7 +163,7 @@ public class DoctorController {
 
     /**
      * 更新挂号状态（接诊或完成就诊）
-     * 
+     *
      * <p><b>【安全特性】</b>验证当前医生是否为该挂号的责任医生，防止越权操作。
      * <p><b>【管理员特权】</b>管理员可以直接更新状态，不受责任医生限制。
      *
@@ -169,7 +172,7 @@ public class DoctorController {
      * @return 操作结果
      */
     @Operation(
-        summary = "更新就诊状态", 
+        summary = "更新就诊状态",
         description = "<b>【安全特性】强制从JWT Token获取医生ID并验证权限，防止水平越权（IDOR）攻击</b><br/>" +
                       "医生接诊或完成就诊，将挂号状态从待就诊更新为已就诊。<br/>" +
                       "系统会验证当前医生是否是该挂号记录的责任医生，只有责任医生才能更新状态。<br/>" +
@@ -198,14 +201,14 @@ public class DoctorController {
                 log.warn("更新就诊状态失败: 挂号ID为空");
                 return Result.badRequest("挂号ID不能为空");
             }
-            
+
             if (status == null) {
                 log.warn("更新就诊状态失败: 状态码为空，挂号ID: {}", id);
                 return Result.badRequest("状态码不能为空");
             }
-            
+
             log.info("更新就诊状态请求，挂号ID: {}, 状态码: {}", id, status);
-            
+
             // 将状态码转换为枚举（会验证状态码有效性）
             RegStatusEnum newStatus;
             try {
@@ -214,7 +217,7 @@ public class DoctorController {
                 log.warn("更新就诊状态失败: 无效的状态码 - {}", status);
                 return Result.badRequest("无效的状态码: " + status + ", 有效值: 0=待就诊, 1=已就诊, 2=已取消, 3=已退号");
             }
-            
+
             if (SecurityUtils.isAdmin()) {
                 // 管理员模式：拥有最高权限，跳过所有权检查，直接更新状态
                 log.info("【管理员】执行强制接诊/状态更新操作: 挂号ID={}, 状态={}", id, status);
@@ -224,7 +227,7 @@ public class DoctorController {
                 Long currentDoctorId = SecurityUtils.getCurrentDoctorId();
                 doctorService.validateAndUpdateStatus(id, currentDoctorId, newStatus);
             }
-            
+
             return Result.success(String.format("状态更新成功: %s", newStatus.getDescription()), null);
         } catch (IllegalStateException e) {
             // SecurityUtils 或 service 层抛出的异常

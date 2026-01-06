@@ -1,8 +1,7 @@
 package com.his.common;
 
-import com.his.exception.BusinessException;
-import com.his.monitoring.AlertService;
-import com.his.test.base.BaseServiceTest;
+import java.util.Collections;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -20,7 +19,9 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.Collections;
+import com.his.exception.BusinessException;
+import com.his.monitoring.AlertService;
+import com.his.test.base.BaseServiceTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

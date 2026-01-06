@@ -1,9 +1,10 @@
 package com.his.specification;
 
-import com.his.entity.Medicine;
+import java.math.BigDecimal;
+
 import org.springframework.data.jpa.domain.Specification;
 
-import java.math.BigDecimal;
+import com.his.entity.Medicine;
 
 /**
  * 药品动态查询规格类

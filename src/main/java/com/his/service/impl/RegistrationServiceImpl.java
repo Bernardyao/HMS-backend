@@ -1,5 +1,17 @@
 package com.his.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.his.common.DataMaskingUtils;
 import com.his.dto.PaymentDTO;
 import com.his.dto.RegistrationDTO;
 import com.his.entity.Charge;
@@ -9,6 +21,7 @@ import com.his.entity.Patient;
 import com.his.entity.Registration;
 import com.his.enums.ChargeStatusEnum;
 import com.his.enums.RegStatusEnum;
+import com.his.log.utils.LogUtils;
 import com.his.repository.ChargeRepository;
 import com.his.repository.DepartmentRepository;
 import com.his.repository.DoctorRepository;
@@ -17,21 +30,9 @@ import com.his.repository.RegistrationRepository;
 import com.his.service.ChargeService;
 import com.his.service.RegistrationService;
 import com.his.vo.RegistrationVO;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import com.his.common.DataMaskingUtils;
-import com.his.log.utils.LogUtils;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * 挂号服务实现类
@@ -185,28 +186,28 @@ public class RegistrationServiceImpl implements RegistrationService {
         // 3. 查询科室和医生信息
         Department department = departmentRepository.findById(dto.getDeptId())
                 .orElseThrow(() -> new IllegalArgumentException("科室不存在，ID: " + dto.getDeptId()));
-        
+
         Doctor doctor = doctorRepository.findById(dto.getDoctorId())
                 .orElseThrow(() -> new IllegalArgumentException("医生不存在，ID: " + dto.getDoctorId()));
 
         // 4. 检查是否重复挂号（同一患者、同一医生、同一天、待就诊状态）
         LocalDate today = LocalDate.now();
-        log.info("开始重复挂号检查，参数: 患者ID={}, 医生ID={}, 日期={}", 
+        log.info("开始重复挂号检查，参数: 患者ID={}, 医生ID={}, 日期={}",
                 patient.getMainId(), doctor.getMainId(), today);
-        
+
         boolean alreadyRegistered = registrationRepository.existsByPatientAndDoctorAndDateAndStatusWaiting(
                 patient.getMainId(), doctor.getMainId(), today, (short) 0, (short) 0);
-        
+
         log.info("重复挂号检查结果: alreadyRegistered = {}", alreadyRegistered);
-        
+
         if (alreadyRegistered) {
-            log.warn("检测到重复挂号尝试，患者: {} (ID: {}), 医生: {} (ID: {}), 日期: {}", 
+            log.warn("检测到重复挂号尝试，患者: {} (ID: {}), 医生: {} (ID: {}), 日期: {}",
                     patient.getName(), patient.getMainId(), doctor.getName(), doctor.getMainId(), today);
             throw new IllegalStateException(
-                    String.format("患者 %s 今日已挂号 %s 医生，请勿重复挂号", 
+                    String.format("患者 %s 今日已挂号 %s 医生，请勿重复挂号",
                             patient.getName(), doctor.getName()));
         }
-        log.info("重复挂号检查通过，患者: {} (ID: {}), 医生: {} (ID: {})", 
+        log.info("重复挂号检查通过，患者: {} (ID: {}), 医生: {} (ID: {})",
                 patient.getName(), patient.getMainId(), doctor.getName(), doctor.getMainId());
 
         // 5. 创建挂号单
@@ -452,7 +453,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         newPatient.setIsDeleted((short) 0);
 
         Patient savedPatient = patientRepository.save(newPatient);
-        log.info("新患者建档成功，患者ID: {}, 病历号: {}", 
+        log.info("新患者建档成功，患者ID: {}, 病历号: {}",
                 savedPatient.getMainId(), savedPatient.getPatientNo());
 
         return savedPatient;
@@ -461,7 +462,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     /**
      * 创建挂号单
      */
-    private Registration createRegistration(Patient patient, Department department, 
+    private Registration createRegistration(Patient patient, Department department,
                                            Doctor doctor, RegistrationDTO dto) {
         Registration registration = new Registration();
         registration.setRegNo(generateRegNo());

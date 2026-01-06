@@ -1,17 +1,18 @@
 package com.his.controller;
 
-import com.his.common.JwtUtils;
-import com.his.dto.LoginRequest;
-import com.his.entity.SysUser;
-import com.his.repository.SysUserRepository;
-import com.his.test.base.BaseControllerTest;
-import com.his.vo.LoginVO;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.his.common.JwtUtils;
+import com.his.dto.LoginRequest;
+import com.his.entity.SysUser;
+import com.his.repository.SysUserRepository;
+import com.his.test.base.BaseControllerTest;
+import com.his.vo.LoginVO;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -79,10 +80,10 @@ class AuthControllerTest extends BaseControllerTest {
         // 验证返回的Token是否有效
         String responseBody = result.getResponse().getContentAsString();
         LoginVO loginVO = objectMapper.readValue(
-                objectMapper.readTree(responseBody).get("data").toString(), 
+                objectMapper.readTree(responseBody).get("data").toString(),
                 LoginVO.class
         );
-        
+
         Assertions.assertNotNull(loginVO.getToken());
         Assertions.assertTrue(jwtUtils.validateToken(loginVO.getToken()));
         Assertions.assertEquals(testUsername, jwtUtils.getUsernameFromToken(loginVO.getToken()));
@@ -193,7 +194,7 @@ class AuthControllerTest extends BaseControllerTest {
 
         String responseBody = loginResult.getResponse().getContentAsString();
         LoginVO loginVO = objectMapper.readValue(
-                objectMapper.readTree(responseBody).get("data").toString(), 
+                objectMapper.readTree(responseBody).get("data").toString(),
                 LoginVO.class
         );
 
@@ -282,7 +283,7 @@ class AuthControllerTest extends BaseControllerTest {
 
         String loginResponseBody = loginResult.getResponse().getContentAsString();
         LoginVO loginVO = objectMapper.readValue(
-                objectMapper.readTree(loginResponseBody).get("data").toString(), 
+                objectMapper.readTree(loginResponseBody).get("data").toString(),
                 LoginVO.class
         );
         String token = loginVO.getToken();

@@ -1,5 +1,9 @@
 package com.his.controller;
 
+import jakarta.validation.Valid;
+
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.dto.LoginRequest;
 import com.his.log.annotation.AuditLog;
@@ -7,13 +11,13 @@ import com.his.log.annotation.AuditType;
 import com.his.log.utils.LogUtils;
 import com.his.service.AuthService;
 import com.his.vo.LoginVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * 认证控制器

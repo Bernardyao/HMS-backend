@@ -1,15 +1,16 @@
 package com.his.log.integration;
 
-import com.his.common.Result;
-import com.his.controller.AuthController;
-import com.his.dto.LoginRequest;
-import com.his.service.AuthService;
-import com.his.test.base.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
+import com.his.common.Result;
+import com.his.controller.AuthController;
+import com.his.dto.LoginRequest;
+import com.his.service.AuthService;
+import com.his.test.base.BaseIntegrationTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

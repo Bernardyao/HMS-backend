@@ -1,5 +1,22 @@
 package com.his.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import jakarta.persistence.criteria.Predicate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
 import com.his.entity.*;
@@ -12,24 +29,11 @@ import com.his.service.ChargeService;
 import com.his.service.PrescriptionService;
 import com.his.vo.ChargeVO;
 import com.his.vo.DailySettlementVO;
+
 import io.micrometer.core.instrument.Timer;
-import jakarta.persistence.criteria.Predicate;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 收费服务实现类
@@ -249,7 +253,7 @@ public class ChargeServiceImpl implements ChargeService {
         charge.setActualAmount(totalAmount);
         charge.setStatus(ChargeStatusEnum.UNPAID.getCode());
         charge.setIsDeleted((short) 0);
-        
+
         Charge savedCharge = chargeRepository.save(charge);
 
         for (ChargeDetail d : details) {
@@ -372,7 +376,7 @@ public class ChargeServiceImpl implements ChargeService {
         charge.setPaymentMethod(dto.getPaymentMethod());
         charge.setTransactionNo(dto.getTransactionNo());
         charge.setChargeTime(LocalDateTime.now());
-        
+
         Charge savedCharge = chargeRepository.save(charge);
 
         // 【改造】支付成功后更新关联实体状态
@@ -461,7 +465,7 @@ public class ChargeServiceImpl implements ChargeService {
         charge.setRefundReason(refundReason);
         charge.setRefundTime(LocalDateTime.now());
         charge.setRefundAmount(charge.getActualAmount());
-        
+
         Charge savedCharge = chargeRepository.save(charge);
 
         if (charge.getDetails() != null) {
@@ -469,7 +473,7 @@ public class ChargeServiceImpl implements ChargeService {
                 if ("PRESCRIPTION".equals(detail.getItemType())) {
                     Prescription prescription = prescriptionRepository.findById(detail.getItemId())
                             .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + detail.getItemId()));
-                    
+
                     if (PrescriptionStatusEnum.PAID.getCode().equals(prescription.getStatus())) {
                         prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode());
                         prescription.setUpdatedAt(LocalDateTime.now());
@@ -527,7 +531,7 @@ public class ChargeServiceImpl implements ChargeService {
         Specification<Charge> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("isDeleted"), (short) 0));
-            
+
             if (chargeNo != null && !chargeNo.isEmpty()) {
                 predicates.add(cb.equal(root.get("chargeNo"), chargeNo));
             }
@@ -543,7 +547,7 @@ public class ChargeServiceImpl implements ChargeService {
             if (endDate != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endDate.atTime(23, 59, 59)));
             }
-            
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
@@ -589,12 +593,12 @@ public class ChargeServiceImpl implements ChargeService {
         LocalDateTime end = date.atTime(23, 59, 59);
 
         List<Charge> charges = chargeRepository.findByChargeTimeRange(start, end);
-        
+
         long totalCharges = 0;
         BigDecimal totalAmount = BigDecimal.ZERO;
         BigDecimal totalRefundAmount = BigDecimal.ZERO;
         long totalRefundCount = 0;
-        
+
         Map<String, DailySettlementVO.PaymentBreakdownVO> breakdown = new HashMap<>();
         for (com.his.enums.PaymentMethodEnum method : com.his.enums.PaymentMethodEnum.values()) {
             DailySettlementVO.PaymentBreakdownVO b = new DailySettlementVO.PaymentBreakdownVO();
@@ -607,7 +611,7 @@ public class ChargeServiceImpl implements ChargeService {
             if (ChargeStatusEnum.PAID.getCode().equals(c.getStatus()) || ChargeStatusEnum.REFUNDED.getCode().equals(c.getStatus())) {
                 totalCharges++;
                 totalAmount = totalAmount.add(c.getActualAmount());
-                
+
                 if (c.getPaymentMethod() != null) {
                     String methodName = com.his.enums.PaymentMethodEnum.fromCode(c.getPaymentMethod()).name();
                     DailySettlementVO.PaymentBreakdownVO b = breakdown.get(methodName);
@@ -615,7 +619,7 @@ public class ChargeServiceImpl implements ChargeService {
                     b.setAmount(b.getAmount().add(c.getActualAmount()));
                 }
             }
-            
+
             if (ChargeStatusEnum.REFUNDED.getCode().equals(c.getStatus())) {
                 totalRefundCount++;
                 totalRefundAmount = totalRefundAmount.add(c.getRefundAmount() != null ? c.getRefundAmount() : BigDecimal.ZERO);
@@ -624,11 +628,11 @@ public class ChargeServiceImpl implements ChargeService {
 
         DailySettlementVO vo = new DailySettlementVO();
         vo.setDate(date);
-        vo.setCashierName("当前收费员"); 
+        vo.setCashierName("当前收费员");
         vo.setTotalCharges(totalCharges);
         vo.setTotalAmount(totalAmount);
         vo.setPaymentBreakdown(breakdown);
-        
+
         DailySettlementVO.RefundStatsVO rStats = new DailySettlementVO.RefundStatsVO();
         rStats.setCount(totalRefundCount);
         rStats.setAmount(totalRefundAmount);

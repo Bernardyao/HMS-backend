@@ -22,6 +22,13 @@
         <!-- 导入检查 -->
         <module name="UnusedImports"/>
         <module name="RedundantImport"/>
+        <module name="ImportOrder">
+            <property name="groups" value="java,javax,jakarta,org,com,io,lombok"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="option" value="bottom"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
 
         <!-- 代码风格 -->
         <module name="LeftCurly"/>

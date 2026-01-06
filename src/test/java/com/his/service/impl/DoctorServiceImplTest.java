@@ -1,17 +1,18 @@
 package com.his.service.impl;
 
+import java.time.LocalDate;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import com.his.entity.Doctor;
 import com.his.entity.Registration;
 import com.his.enums.RegStatusEnum;
 import com.his.repository.DepartmentRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.test.base.BaseServiceTest;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.time.LocalDate;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

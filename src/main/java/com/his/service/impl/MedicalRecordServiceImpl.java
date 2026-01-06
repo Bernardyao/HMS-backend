@@ -1,17 +1,19 @@
 package com.his.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.his.dto.MedicalRecordDTO;
 import com.his.entity.MedicalRecord;
 import com.his.entity.Registration;
 import com.his.repository.MedicalRecordRepository;
 import com.his.repository.RegistrationRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * 病历服务实现类
@@ -329,7 +331,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         // 设置状态
         record.setStatus(dto.getStatus() != null ? dto.getStatus() : (short) 0);
         record.setIsDeleted((short) 0);
-        
+
         // 时间字段将由@PrePersist自动设置，不需要手动设置
 
         return record;

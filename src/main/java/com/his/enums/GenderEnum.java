@@ -4,17 +4,17 @@ package com.his.enums;
  * 性别枚举
  */
 public enum GenderEnum {
-    
+
     /**
      * 女
      */
     FEMALE((short) 0, "女"),
-    
+
     /**
      * 男
      */
     MALE((short) 1, "男"),
-    
+
     /**
      * 未知
      */

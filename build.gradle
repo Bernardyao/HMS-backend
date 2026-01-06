@@ -9,6 +9,7 @@ plugins {
     id 'pmd'
     id 'com.github.spotbugs' version '6.0.9'
     id 'org.owasp.dependencycheck' version '8.4.3'
+    id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.his'
@@ -40,6 +41,16 @@ java {
 // 编译配置：添加 -parameters 标志以保留参数名
 tasks.withType(JavaCompile) {
     options.compilerArgs += ['-parameters']
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java'
+        importOrder('java', 'javax', 'jakarta', 'org', 'com', 'io', 'lombok', '', '\\#')
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 repositories {

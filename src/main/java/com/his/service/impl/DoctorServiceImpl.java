@@ -1,5 +1,13 @@
 package com.his.service.impl;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import com.his.converter.VoConverter;
 import com.his.entity.Department;
 import com.his.entity.Doctor;
@@ -14,15 +22,9 @@ import com.his.repository.RegistrationRepository;
 import com.his.service.DoctorService;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 医生工作站服务实现类
@@ -114,9 +116,9 @@ public class DoctorServiceImpl implements DoctorService {
     @Override
     @Transactional(readOnly = true)
     public List<RegistrationVO> getWaitingList(Long doctorId, Long deptId, boolean showAllDept) {
-        log.info("查询候诊列表，医生ID: {}, 科室ID: {}, 科室视图: {}, 日期: {}", 
+        log.info("查询候诊列表，医生ID: {}, 科室ID: {}, 科室视图: {}, 日期: {}",
                 doctorId, deptId, showAllDept, LocalDate.now());
-        
+
         // 防御性编程1: 根据视图模式验证必需参数
         if (showAllDept) {
             // 科室视图：必须提供科室ID
@@ -139,9 +141,9 @@ public class DoctorServiceImpl implements DoctorService {
                 throw new IllegalArgumentException("医生ID必须大于0，当前值: " + doctorId);
             }
         }
-        
+
         List<Registration> registrations;
-        
+
         if (showAllDept) {
             // 科室视图：查询整个科室的候诊列表
             // 防御性编程2: 验证科室是否存在
@@ -150,21 +152,21 @@ public class DoctorServiceImpl implements DoctorService {
                 log.warn("查询候诊列表失败: 科室不存在，ID: {}", deptId);
                 throw new IllegalArgumentException("科室不存在，ID: " + deptId);
             }
-            
+
             // 防御性编程3: 验证科室是否被删除
             if (department.getIsDeleted() != null && department.getIsDeleted() == 1) {
                 log.warn("查询候诊列表失败: 科室已被删除，ID: {}, 名称: {}", deptId, department.getName());
                 throw new IllegalArgumentException("科室已停用: " + department.getName());
             }
-            
+
             // 防御性编程4: 验证科室是否启用
             if (department.getStatus() != null && department.getStatus() == 0) {
                 log.warn("查询候诊列表失败: 科室已停用，ID: {}, 名称: {}", deptId, department.getName());
                 throw new IllegalArgumentException("科室已停用: " + department.getName());
             }
-            
+
             log.info("使用科室视图查询，科室ID: {}, 科室名称: {}", deptId, department.getName());
-            
+
             // 查询今日、指定科室、待就诊状态的挂号记录，按排队号升序
             registrations = registrationRepository
                     .findByDepartment_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
@@ -173,12 +175,12 @@ public class DoctorServiceImpl implements DoctorService {
                             RegStatusEnum.WAITING.getCode(),
                             (short) 0
                     );
-            
+
             log.info("科室[{}]查询到 {} 条候诊记录", department.getName(), registrations.size());
         } else {
             // 个人视图：仅查询分配给当前医生的候诊列表
             log.info("使用个人视图查询，医生ID: {}", doctorId);
-            
+
             // 查询今日、指定医生、待就诊状态的挂号记录，按排队号升序
             registrations = registrationRepository
                     .findByDoctor_MainIdAndVisitDateAndStatusAndIsDeletedOrderByQueueNoAsc(
@@ -187,7 +189,7 @@ public class DoctorServiceImpl implements DoctorService {
                             RegStatusEnum.WAITING.getCode(),
                             (short) 0
                     );
-            
+
             log.info("医生[ID:{}]查询到 {} 条候诊记录", doctorId, registrations.size());
         }
 
@@ -214,17 +216,17 @@ public class DoctorServiceImpl implements DoctorService {
             log.error("更新挂号状态失败: 挂号ID为null");
             throw new IllegalArgumentException("挂号ID不能为空");
         }
-        
+
         if (regId <= 0) {
             log.error("更新挂号状态失败: 挂号ID无效 - {}", regId);
             throw new IllegalArgumentException("挂号ID必须大于0，当前值: " + regId);
         }
-        
+
         if (newStatus == null) {
             log.error("更新挂号状态失败: 新状态为null，挂号ID: {}", regId);
             throw new IllegalArgumentException("新状态不能为空");
         }
-        
+
         log.info("更新挂号状态，挂号ID: {}, 新状态: {}", regId, newStatus);
 
         // 防御性编程2: 查询挂号记录
@@ -233,22 +235,22 @@ public class DoctorServiceImpl implements DoctorService {
                     log.warn("更新挂号状态失败: 挂号记录不存在，ID: {}", regId);
                     return new IllegalArgumentException("挂号记录不存在，ID: " + regId);
                 });
-        
+
         // 防御性编程3: 检查记录是否被删除
         if (registration.getIsDeleted() != null && registration.getIsDeleted() == 1) {
             log.warn("更新挂号状态失败: 挂号记录已被删除，ID: {}", regId);
             throw new IllegalArgumentException("该挂号记录已被删除，无法操作");
         }
-        
+
         // 防御性编程4: 检查就诊日期
         if (registration.getVisitDate() != null && !registration.getVisitDate().equals(LocalDate.now())) {
-            log.warn("更新挂号状态失败: 只能操作今日的挂号记录，挂号ID: {}, 就诊日期: {}", 
+            log.warn("更新挂号状态失败: 只能操作今日的挂号记录，挂号ID: {}, 就诊日期: {}",
                     regId, registration.getVisitDate());
             throw new IllegalStateException(
                     String.format("只能操作今日的挂号记录，该记录就诊日期为: %s", registration.getVisitDate())
             );
         }
-        
+
         // 获取当前状态描述
         String currentStatusDesc = "未知";
         try {
@@ -260,14 +262,14 @@ public class DoctorServiceImpl implements DoctorService {
         // 防御性编程5: 状态转换合法性检查
         if (RegStatusEnum.COMPLETED.equals(newStatus)) {
             if (!RegStatusEnum.WAITING.getCode().equals(registration.getStatus())) {
-                log.warn("更新挂号状态失败: 非法状态转换，挂号ID: {}, 当前状态: {}, 目标状态: {}", 
+                log.warn("更新挂号状态失败: 非法状态转换，挂号ID: {}, 当前状态: {}, 目标状态: {}",
                         regId, currentStatusDesc, newStatus.getDescription());
                 throw new IllegalStateException(
                         String.format("只有[待就诊]状态的挂号才能接诊，当前状态: [%s]", currentStatusDesc)
                 );
             }
         }
-        
+
         // 防御性编程6: 不能更新为相同状态
         if (registration.getStatus() != null && registration.getStatus().equals(newStatus.getCode())) {
             log.warn("更新挂号状态失败: 状态未变化，挂号ID: {}, 当前状态: {}", regId, currentStatusDesc);
@@ -280,7 +282,7 @@ public class DoctorServiceImpl implements DoctorService {
         registration.setStatus(newStatus.getCode());
         registrationRepository.save(registration);
 
-        log.info("挂号状态更新成功，挂号ID: {}, 原状态: {}, 新状态: {}", 
+        log.info("挂号状态更新成功，挂号ID: {}, 原状态: {}, 新状态: {}",
                 regId, currentStatusDesc, newStatus.getDescription());
     }
 
@@ -310,18 +312,18 @@ public class DoctorServiceImpl implements DoctorService {
             log.error("【IDOR防御】验证更新挂号状态失败: 挂号ID无效 - {}", regId);
             throw new IllegalArgumentException("挂号ID必须大于0，当前值: " + regId);
         }
-        
+
         if (currentDoctorId == null || currentDoctorId <= 0) {
             log.error("【IDOR防御】验证更新挂号状态失败: 当前医生ID无效 - {}", currentDoctorId);
             throw new IllegalArgumentException("医生ID无效");
         }
-        
+
         if (newStatus == null) {
             log.error("【IDOR防御】验证更新挂号状态失败: 新状态为null，挂号ID: {}", regId);
             throw new IllegalArgumentException("新状态不能为空");
         }
 
-        log.info("【IDOR防御】验证并更新挂号状态，挂号ID: {}, 当前医生ID: {}, 新状态: {}", 
+        log.info("【IDOR防御】验证并更新挂号状态，挂号ID: {}, 当前医生ID: {}, 新状态: {}",
                 regId, currentDoctorId, newStatus);
 
         // 防御性编程2: 查询挂号记录及其医生信息
@@ -330,7 +332,7 @@ public class DoctorServiceImpl implements DoctorService {
                     log.warn("【IDOR防御】验证失败: 挂号记录不存在，ID: {}, 医生ID: {}", regId, currentDoctorId);
                     return new IllegalArgumentException("挂号记录不存在，ID: " + regId);
                 });
-        
+
         // 防御性编程3: 检查记录是否被删除
         if (registration.getIsDeleted() != null && registration.getIsDeleted() == 1) {
             log.warn("【IDOR防御】验证失败: 挂号记录已被删除，ID: {}, 医生ID: {}", regId, currentDoctorId);
@@ -345,7 +347,7 @@ public class DoctorServiceImpl implements DoctorService {
         }
 
         Long registrationDoctorId = registration.getDoctor().getMainId();
-        
+
         // ✅ 核心IDOR防御: 对比医生ID
         if (!registrationDoctorId.equals(currentDoctorId)) {
             log.warn("【IDOR防御】水平越权攻击被拦截！");
@@ -353,7 +355,7 @@ public class DoctorServiceImpl implements DoctorService {
             log.warn("  - 挂号医生ID: {}", registrationDoctorId);
             log.warn("  - 当前医生ID: {}", currentDoctorId);
             log.warn("  - 医生尝试修改不属于自己的挂号");
-            
+
             throw new IllegalArgumentException(
                     String.format("无权限操作: 该挂号属于其他医生（ID: %d），您只能操作自己的挂号", registrationDoctorId)
             );

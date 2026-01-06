@@ -1,8 +1,10 @@
 package com.his.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 import java.math.BigDecimal;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import lombok.Data;
 
 /**
  * 药师工作统计数据传输对象

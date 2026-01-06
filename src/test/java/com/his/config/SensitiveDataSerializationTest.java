@@ -1,16 +1,17 @@
 package com.his.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.his.common.SensitiveType;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.his.common.SensitiveType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

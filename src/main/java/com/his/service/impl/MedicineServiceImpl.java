@@ -1,20 +1,22 @@
 package com.his.service.impl;
 
-import com.his.dto.InventoryStatsVO;
-import com.his.entity.Medicine;
-import com.his.repository.MedicineRepository;
-import com.his.service.MedicineService;
-import com.his.specification.MedicineSpecification;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.his.dto.InventoryStatsVO;
+import com.his.entity.Medicine;
+import com.his.repository.MedicineRepository;
+import com.his.service.MedicineService;
+import com.his.specification.MedicineSpecification;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 药品服务实现类
@@ -80,7 +82,7 @@ public class MedicineServiceImpl implements MedicineService {
     @Transactional(readOnly = true)
     public List<Medicine> searchMedicines(String keyword) {
         log.info("搜索药品，关键字: {}", keyword);
-        
+
         if (!StringUtils.hasText(keyword)) {
             log.warn("搜索关键字为空，返回所有启用的药品");
             return getAllActive();
@@ -89,7 +91,7 @@ public class MedicineServiceImpl implements MedicineService {
         // 使用 @Query 自定义查询，支持名称或编码模糊匹配
         List<Medicine> medicines = medicineRepository.searchByKeyword(keyword, (short) 0);
         log.info("搜索到 {} 个药品", medicines.size());
-        
+
         return medicines;
     }
 
@@ -109,18 +111,18 @@ public class MedicineServiceImpl implements MedicineService {
     @Transactional(readOnly = true)
     public Medicine getById(Long id) {
         log.info("查询药品，ID: {}", id);
-        
+
         if (id == null) {
             throw new IllegalArgumentException("药品ID不能为空");
         }
-        
+
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("药品不存在，ID: " + id));
-        
+
         if (medicine.getIsDeleted() == 1) {
             throw new IllegalArgumentException("药品已被删除，ID: " + id);
         }
-        
+
         return medicine;
     }
 
@@ -172,17 +174,17 @@ public class MedicineServiceImpl implements MedicineService {
     @Transactional(readOnly = true)
     public boolean checkStock(Long medicineId, Integer quantity) {
         log.info("检查库存，药品ID: {}, 需要数量: {}", medicineId, quantity);
-        
+
         if (medicineId == null || quantity == null || quantity <= 0) {
             throw new IllegalArgumentException("参数错误");
         }
-        
+
         Medicine medicine = getById(medicineId);
         boolean sufficient = medicine.getStockQuantity() >= quantity;
-        
-        log.info("库存检查结果: 当前库存={}, 需要数量={}, 是否充足={}", 
+
+        log.info("库存检查结果: 当前库存={}, 需要数量={}, 是否充足={}",
                 medicine.getStockQuantity(), quantity, sufficient);
-        
+
         return sufficient;
     }
 
@@ -238,7 +240,7 @@ public class MedicineServiceImpl implements MedicineService {
         // 更新库存
         medicine.setStockQuantity((int) newStock);
         medicine.setUpdatedAt(java.time.LocalDateTime.now());
-        
+
         // 实际保存
         medicineRepository.save(medicine);
 

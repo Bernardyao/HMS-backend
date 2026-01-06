@@ -4,27 +4,27 @@ package com.his.enums;
  * 处方状态枚举
  */
 public enum PrescriptionStatusEnum {
-    
+
     /**
      * 草稿
      */
     DRAFT((short) 0, "草稿"),
-    
+
     /**
      * 已开方
      */
     ISSUED((short) 1, "已开方"),
-    
+
     /**
      * 已审核
      */
     REVIEWED((short) 2, "已审核"),
-    
+
     /**
      * 已发药
      */
     DISPENSED((short) 3, "已发药"),
-    
+
     /**
      * 已退费
      */

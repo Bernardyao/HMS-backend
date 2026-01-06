@@ -1,20 +1,21 @@
 package com.his.controller;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.his.dto.MedicalRecordDTO;
 import com.his.dto.PrescriptionDTO;
 import com.his.entity.*;
 import com.his.repository.*;
 import com.his.test.base.BaseControllerTest;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -310,7 +311,7 @@ class DoctorWorkstationIntegrationTest extends BaseControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        
+
         System.out.println("病历创建响应: " + recordResponse);
 
         // 创建处方
@@ -402,7 +403,7 @@ class DoctorWorkstationIntegrationTest extends BaseControllerTest {
 
         List<PrescriptionDetail> details = prescriptionDetailRepository
                 .findByPrescription_MainIdAndIsDeletedOrderBySortOrder(prescriptionId, (short) 0);
-        
+
         Assertions.assertEquals(1, details.size());
         Assertions.assertEquals(new BigDecimal("12.5000"), details.get(0).getUnitPrice(),
                 "处方明细中的单价必须与数据库中的药品单价一致");
@@ -559,7 +560,7 @@ class DoctorWorkstationIntegrationTest extends BaseControllerTest {
                 .findByMedicalRecord_MainIdAndIsDeleted(
                         medicalRecordRepository.findByRegistration_MainIdAndIsDeleted(testRegistrationId, (short) 0)
                                 .get().getMainId(), (short) 0);
-        
+
         Assertions.assertTrue(prescriptions.size() >= 1, "应该至少有一个处方");
     }
 }

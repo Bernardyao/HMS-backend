@@ -78,9 +78,9 @@ import com.his.dto.CurrentUser;
  * @see com.his.dto.CurrentUser
  */
 public class UserContextHolder {
-    
+
     private static final ThreadLocal<CurrentUser> CONTEXT = new ThreadLocal<>();
-    
+
     /**
      * 设置当前用户信息
      *
@@ -89,7 +89,7 @@ public class UserContextHolder {
     public static void setCurrentUser(CurrentUser user) {
         CONTEXT.set(user);
     }
-    
+
     /**
      * 获取当前用户信息
      *
@@ -98,14 +98,14 @@ public class UserContextHolder {
     public static CurrentUser getCurrentUser() {
         return CONTEXT.get();
     }
-    
+
     /**
      * 清除当前用户信息
      */
     public static void clear() {
         CONTEXT.remove();
     }
-    
+
     /**
      * 获取当前用户ID
      *
@@ -115,7 +115,7 @@ public class UserContextHolder {
         CurrentUser user = getCurrentUser();
         return user != null ? user.getId() : null;
     }
-    
+
     /**
      * 获取当前用户所属科室ID
      *
@@ -125,7 +125,7 @@ public class UserContextHolder {
         CurrentUser user = getCurrentUser();
         return user != null ? user.getDeptId() : null;
     }
-    
+
     /**
      * 判断当前用户是否为管理员
      *

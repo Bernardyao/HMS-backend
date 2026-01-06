@@ -1,20 +1,22 @@
 package com.his.service.impl;
 
-import com.his.dto.PrescriptionDTO;
-import com.his.entity.*;
-import com.his.enums.PrescriptionStatusEnum;
-import com.his.repository.*;
-import com.his.service.PrescriptionService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.his.dto.PrescriptionDTO;
+import com.his.entity.*;
+import com.his.enums.PrescriptionStatusEnum;
+import com.his.repository.*;
+import com.his.service.PrescriptionService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 处方服务实现类
@@ -260,9 +262,9 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         }
 
         List<Prescription> prescriptions = prescriptionRepository.findByMedicalRecord_MainIdAndIsDeleted(recordId, (short) 0);
-        
+
         prescriptions.forEach(this::initializeLazyFields);
-        
+
         return prescriptions;
     }
 
@@ -410,14 +412,14 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     .orElseThrow(() -> new IllegalArgumentException("药品不存在，ID: " + detail.getMedicine().getMainId()));
 
             if (medicine.getStockQuantity() < detail.getQuantity()) {
-                throw new IllegalStateException("药品 [" + medicine.getName() + "] 库存不足，当前库存: " 
+                throw new IllegalStateException("药品 [" + medicine.getName() + "] 库存不足，当前库存: "
                         + medicine.getStockQuantity() + ", 需求数量: " + detail.getQuantity());
             }
 
             medicine.setStockQuantity(medicine.getStockQuantity() - detail.getQuantity());
             medicine.setUpdatedAt(LocalDateTime.now());
             medicineRepository.save(medicine);
-            
+
             log.info("药品库存已扣减：药品ID={}, 名称={}, 扣减数量={}, 剩余库存={}",
                     medicine.getMainId(), medicine.getName(), detail.getQuantity(), medicine.getStockQuantity());
         }
@@ -573,14 +575,14 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         LocalDateTime endTime = java.time.LocalDate.now().atTime(java.time.LocalTime.MAX);
 
         com.his.dto.PharmacistStatisticsDTO stats = prescriptionRepository.getPharmacistStatistics(pharmacistId, startTime, endTime);
-        
+
         if (stats == null) {
             return new com.his.dto.PharmacistStatisticsDTO();
         }
-        
-        log.info("统计结果: 发药单数={}, 总金额={}, 药品总数={}", 
+
+        log.info("统计结果: 发药单数={}, 总金额={}, 药品总数={}",
                 stats.getDispensedCount(), stats.getTotalAmount(), stats.getTotalItems());
-        
+
         return stats;
     }
 

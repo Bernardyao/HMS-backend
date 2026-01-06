@@ -1,5 +1,17 @@
 package com.his.service.impl;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.persistence.criteria.Predicate;
+
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import com.his.dto.NurseWorkstationDTO;
 import com.his.entity.Registration;
 import com.his.enums.GenderEnum;
@@ -8,18 +20,9 @@ import com.his.enums.VisitTypeEnum;
 import com.his.repository.RegistrationRepository;
 import com.his.service.NurseWorkstationService;
 import com.his.vo.NurseRegistrationVO;
-import jakarta.persistence.criteria.Predicate;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 护士工作站服务实现类
@@ -166,7 +169,7 @@ public class NurseWorkstationServiceImpl implements NurseWorkstationService {
      */
     private NurseRegistrationVO convertToNurseVO(Registration reg) {
         NurseRegistrationVO vo = new NurseRegistrationVO();
-        
+
         vo.setId(reg.getMainId());
         vo.setRegNo(reg.getRegNo());
         vo.setStatus(reg.getStatus());

@@ -1,11 +1,11 @@
 package com.his.service;
 
+import java.util.List;
+
 import com.his.entity.Doctor;
 import com.his.enums.RegStatusEnum;
 import com.his.vo.PatientDetailVO;
 import com.his.vo.RegistrationVO;
-
-import java.util.List;
 
 /**
  * 医生工作站服务接口
@@ -90,4 +90,3 @@ public interface DoctorService {
      */
     Doctor getAndValidateDoctor(Long doctorId);
 }
-

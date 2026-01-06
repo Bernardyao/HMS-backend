@@ -1,5 +1,14 @@
 package com.his.config;
 
+import java.util.Arrays;
+
+import jakarta.annotation.PostConstruct;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -7,31 +16,25 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-
-import jakarta.annotation.PostConstruct;
-import java.util.Arrays;
 
 /**
  * Knife4j (Swagger) 配置类
- * 
+ *
  * 功能：
  * 1. 配置 API 文档的基本信息
  * 2. 配置 JWT 认证方式
  * 3. 环境感知：只在允许的环境下启用
- * 
+ *
  * 开发环境说明：
  * - dev环境下所有接口完全开放，无需认证
  * - 用户可直接在Swagger UI中测试所有API
  * - 如需测试需要认证的功能，可先调用登录接口获取token，然后点击Authorize按钮添加token
- * 
+ *
  * 访问地址：http://localhost:8080/doc.html
- * 
+ *
  * @author HIS Team
  * @since 1.0.0
  */
@@ -45,11 +48,11 @@ import java.util.Arrays;
     matchIfMissing = false  // 如果未配置，默认不加载
 )
 public class Knife4jConfig {
-    
+
     private final Environment environment;
 
     private static final String SECURITY_SCHEME_NAME = "JWT";
-    
+
     @PostConstruct
     public void init() {
         String[] activeProfiles = environment.getActiveProfiles();

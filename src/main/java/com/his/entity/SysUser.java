@@ -1,9 +1,10 @@
 package com.his.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+
+import lombok.Data;
 
 /**
  * 系统用户实体类

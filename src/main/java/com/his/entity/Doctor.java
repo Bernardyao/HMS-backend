@@ -1,17 +1,19 @@
 package com.his.entity;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.persistence.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.his.common.SensitiveData;
 import com.his.common.SensitiveType;
 import com.his.config.SensitiveDataSerializer;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 医生信息实体类

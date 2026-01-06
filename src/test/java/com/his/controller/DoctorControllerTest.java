@@ -1,5 +1,15 @@
 package com.his.controller;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.his.config.JwtAuthenticationToken;
 import com.his.entity.Department;
 import com.his.entity.Doctor;
@@ -15,15 +25,6 @@ import com.his.repository.PrescriptionDetailRepository;
 import com.his.repository.PrescriptionRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.test.base.BaseControllerTest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -49,16 +50,16 @@ class DoctorControllerTest extends BaseControllerTest {
 
     @Autowired
     private RegistrationRepository registrationRepository;
-    
+
     @Autowired
     private MedicalRecordRepository medicalRecordRepository;
-    
+
     @Autowired
     private PrescriptionRepository prescriptionRepository;
-    
+
     @Autowired
     private PrescriptionDetailRepository prescriptionDetailRepository;
-    
+
     @Autowired
     private ChargeRepository chargeRepository;
 
@@ -90,7 +91,7 @@ class DoctorControllerTest extends BaseControllerTest {
 
         // 防御性编程: 使用时间戳生成唯一标识,避免测试数据冲突
         String uniqueSuffix = String.valueOf(System.currentTimeMillis());
-        
+
         // 创建测试科室 - 内科
         Department department = new Department();
         department.setDeptCode("DEPT" + uniqueSuffix);
@@ -197,7 +198,7 @@ class DoctorControllerTest extends BaseControllerTest {
         Registration savedReg3 = registrationRepository.save(registration3);
         testReg3Id = savedReg3.getMainId();
     }
-    
+
     /**
      * 辅助方法：创建 JWT 认证令牌（用于MockMvc请求）
      */

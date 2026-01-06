@@ -1,10 +1,12 @@
 package com.his.monitoring;
 
-import com.his.repository.ChargeRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
+
+import com.his.repository.ChargeRepository;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 序列生成器健康检查

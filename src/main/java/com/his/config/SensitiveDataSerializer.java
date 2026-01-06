@@ -1,5 +1,7 @@
 package com.his.config;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -10,9 +12,8 @@ import com.his.common.DataMaskingContext;
 import com.his.common.DataMaskingUtils;
 import com.his.common.SensitiveData;
 import com.his.common.SensitiveType;
-import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 敏感数据脱敏序列化器

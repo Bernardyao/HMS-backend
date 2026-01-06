@@ -1,5 +1,14 @@
 package com.his.service.impl;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
 import com.his.dto.CreateChargeDTO;
 import com.his.entity.Patient;
 import com.his.entity.Prescription;
@@ -13,14 +22,6 @@ import com.his.repository.RegistrationRepository;
 import com.his.service.PrescriptionService;
 import com.his.test.base.BaseServiceTest;
 import com.his.vo.ChargeVO;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,13 +55,13 @@ class ChargeServiceImplTest extends BaseServiceTest {
         // Given
         Long registrationId = 1L;
         Long prescriptionId = 10L;
-        
+
         Registration registration = new Registration();
         registration.setMainId(registrationId);
         registration.setStatus(RegStatusEnum.COMPLETED.getCode());
         registration.setRegistrationFee(new BigDecimal("10.00"));
         registration.setIsDeleted((short) 0);
-        
+
         Patient patient = new Patient();
         patient.setMainId(100L);
         patient.setName("张三");
@@ -105,14 +106,14 @@ class ChargeServiceImplTest extends BaseServiceTest {
         // Given
         Long chargeId = 1000L;
         String transactionNo = "WX202312271001";
-        
+
         com.his.entity.Charge charge = new com.his.entity.Charge();
         charge.setMainId(chargeId);
         charge.setStatus(com.his.enums.ChargeStatusEnum.UNPAID.getCode());
         charge.setTotalAmount(new BigDecimal("100.00"));
         charge.setActualAmount(new BigDecimal("100.00"));
         charge.setIsDeleted((short) 0);
-        
+
         Patient patient = new Patient();
         patient.setMainId(100L);
         patient.setName("张三");
@@ -135,7 +136,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
         prescription.setMainId(10L);
         prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode());
         when(prescriptionRepository.findById(10L)).thenReturn(Optional.of(prescription));
-        
+
         when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // When
@@ -151,7 +152,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
     void processPayment_Idempotent() {
         Long chargeId = 1000L;
         String transactionNo = "WX202312271001";
-        
+
         com.his.entity.Charge charge = new com.his.entity.Charge();
         charge.setMainId(chargeId);
         charge.setStatus(com.his.enums.ChargeStatusEnum.PAID.getCode()); // Already PAID
@@ -159,7 +160,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
         charge.setTotalAmount(new BigDecimal("100.00"));
         charge.setActualAmount(new BigDecimal("100.00"));
         charge.setIsDeleted((short) 0);
-        
+
         Patient patient = new Patient();
         patient.setMainId(100L);
         patient.setName("张三");
@@ -186,13 +187,13 @@ class ChargeServiceImplTest extends BaseServiceTest {
         // Given
         Long chargeId = 1000L;
         String refundReason = "Patient allergy";
-        
+
         com.his.entity.Charge charge = new com.his.entity.Charge();
         charge.setMainId(chargeId);
         charge.setStatus(com.his.enums.ChargeStatusEnum.PAID.getCode());
         charge.setTotalAmount(new BigDecimal("100.00"));
         charge.setIsDeleted((short) 0);
-        
+
         Patient patient = new Patient();
         patient.setMainId(100L);
         patient.setName("张三");
@@ -226,12 +227,12 @@ class ChargeServiceImplTest extends BaseServiceTest {
         // Given
         Long chargeId = 1000L;
         String refundReason = "Patient request";
-        
+
         com.his.entity.Charge charge = new com.his.entity.Charge();
         charge.setMainId(chargeId);
         charge.setStatus(com.his.enums.ChargeStatusEnum.PAID.getCode());
         charge.setIsDeleted((short) 0);
-        
+
         Patient patient = new Patient();
         patient.setMainId(100L);
         patient.setName("张三");
@@ -286,7 +287,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
         assertThat(result.getTotalAmount()).isEqualByComparingTo("150.00");
         assertThat(result.getRefunds().getAmount()).isEqualByComparingTo("50.00");
         assertThat(result.getNetCollection()).isEqualByComparingTo("100.00");
-        
+
         assertThat(result.getPaymentBreakdown().get("WECHAT").getAmount()).isEqualByComparingTo("100.00");
         assertThat(result.getPaymentBreakdown().get("ALIPAY").getAmount()).isEqualByComparingTo("50.00");
     }

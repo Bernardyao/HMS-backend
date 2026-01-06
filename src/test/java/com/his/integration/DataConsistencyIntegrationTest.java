@@ -1,15 +1,16 @@
 package com.his.integration;
 
-import com.his.entity.*;
-import com.his.repository.*;
-import com.his.service.impl.MedicineServiceImpl;
-import com.his.test.base.BaseIntegrationTest;
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.math.BigDecimal;
+import com.his.entity.*;
+import com.his.repository.*;
+import com.his.service.impl.MedicineServiceImpl;
+import com.his.test.base.BaseIntegrationTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 

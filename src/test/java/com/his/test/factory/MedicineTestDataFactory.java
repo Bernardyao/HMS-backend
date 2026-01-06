@@ -1,9 +1,9 @@
 package com.his.test.factory;
 
-import com.his.entity.Medicine;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import com.his.entity.Medicine;
 
 /**
  * 药品测试数据工厂

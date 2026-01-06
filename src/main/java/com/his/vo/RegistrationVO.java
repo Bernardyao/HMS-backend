@@ -1,12 +1,13 @@
 package com.his.vo;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import lombok.Data;
 
 /**
  * 挂号信息视图对象

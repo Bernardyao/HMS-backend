@@ -1,5 +1,18 @@
 package com.his.integration;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
 import com.his.entity.*;
@@ -11,18 +24,6 @@ import com.his.service.ChargeService;
 import com.his.service.PrescriptionService;
 import com.his.test.base.BaseControllerTest;
 import com.his.vo.ChargeVO;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -251,7 +252,7 @@ class PhasedChargingIntegrationTest extends BaseControllerTest {
                 .findFirst()
                 .orElseThrow()
                 .getMainId();
-        
+
         // 获取实际应付金额
         Charge charge = chargeRepository.findById(chargeId).orElseThrow();
         BigDecimal amountToPay = charge.getTotalAmount();

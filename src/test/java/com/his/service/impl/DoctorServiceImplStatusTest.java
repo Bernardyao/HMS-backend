@@ -1,12 +1,8 @@
 package com.his.service.impl;
 
-import com.his.entity.Registration;
-import com.his.enums.RegStatusEnum;
-import com.his.repository.DepartmentRepository;
-import com.his.repository.DoctorRepository;
-import com.his.repository.PatientRepository;
-import com.his.repository.RegistrationRepository;
-import com.his.test.base.BaseServiceTest;
+import java.time.LocalDate;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,8 +12,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import com.his.entity.Registration;
+import com.his.enums.RegStatusEnum;
+import com.his.repository.DepartmentRepository;
+import com.his.repository.DoctorRepository;
+import com.his.repository.PatientRepository;
+import com.his.repository.RegistrationRepository;
+import com.his.test.base.BaseServiceTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

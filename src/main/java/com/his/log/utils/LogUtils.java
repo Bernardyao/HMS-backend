@@ -1,8 +1,10 @@
 package com.his.log.utils;
 
-import com.his.common.SecurityUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+
+import com.his.common.SecurityUtils;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 日志工具类

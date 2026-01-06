@@ -1,6 +1,7 @@
 package com.his.dto;
 
 import com.his.enums.UserRole;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,7 +44,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CurrentUser {
-    
+
     /**
      * 用户唯一标识（医生ID）
      *
@@ -135,7 +136,7 @@ public class CurrentUser {
      * </ul>
      */
     private UserRole role;
-    
+
     /**
      * 判断当前用户是否为管理员
      *

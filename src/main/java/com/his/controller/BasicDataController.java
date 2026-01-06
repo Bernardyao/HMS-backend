@@ -1,18 +1,21 @@
 package com.his.controller;
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.service.BasicDataService;
 import com.his.vo.DepartmentBasicVO;
 import com.his.vo.DoctorBasicVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 公共数据接口控制器（用于各工作站）
@@ -70,7 +73,7 @@ public class BasicDataController {
     public Result<List<DoctorBasicVO>> getDoctorsByDepartment(
             @Parameter(description = "科室ID", required = true, example = "1")
             @RequestParam("deptId") Long deptId) {
-        
+
         log.info("API调用：获取科室 {} 的医生列表", deptId);
         List<DoctorBasicVO> doctors = basicDataService.getDoctorsByDepartment(deptId);
         return Result.success(doctors);

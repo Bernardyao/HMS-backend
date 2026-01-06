@@ -4,17 +4,17 @@ package com.his.enums;
  * 收费状态枚举
  */
 public enum ChargeStatusEnum {
-    
+
     /**
      * 未缴费
      */
     UNPAID((short) 0, "未缴费"),
-    
+
     /**
      * 已缴费
      */
     PAID((short) 1, "已缴费"),
-    
+
     /**
      * 已退费
      */

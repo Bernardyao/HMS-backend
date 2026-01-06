@@ -1,12 +1,13 @@
 package com.his.vo;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import lombok.Data;
 
 /**
  * 每日结算报表视图对象

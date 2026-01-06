@@ -1,5 +1,10 @@
 package com.his.controller;
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
 import com.his.common.Result;
 import com.his.dto.NurseWorkstationDTO;
 import com.his.log.annotation.AuditLog;
@@ -8,15 +13,13 @@ import com.his.service.NurseWorkstationService;
 import com.his.service.PatientService;
 import com.his.vo.NurseRegistrationVO;
 import com.his.vo.PatientSearchVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 护士工作站控制器

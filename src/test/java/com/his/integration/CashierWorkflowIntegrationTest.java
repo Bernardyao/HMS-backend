@@ -1,5 +1,18 @@
 package com.his.integration;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
 import com.his.dto.PrescriptionDTO;
@@ -9,18 +22,6 @@ import com.his.enums.RegStatusEnum;
 import com.his.repository.*;
 import com.his.service.PrescriptionService;
 import com.his.test.base.BaseControllerTest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,7 +60,7 @@ class CashierWorkflowIntegrationTest extends BaseControllerTest {
     @BeforeEach
     protected void setUp() {
         String uid = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
-        
+
         // 1. 基础数据
         Department dept = new Department();
         dept.setDeptCode("D" + uid);
@@ -81,7 +82,7 @@ class CashierWorkflowIntegrationTest extends BaseControllerTest {
         patient.setPatientNo("P" + uid);
         patient.setName("张三");
         patient.setGender((short) 1);
-        patient.setIdCard("ID" + uid + "XXXX"); 
+        patient.setIdCard("ID" + uid + "XXXX");
         patient.setIsDeleted((short) 0);
         patient = patientRepository.saveAndFlush(patient);
 
@@ -130,7 +131,7 @@ class CashierWorkflowIntegrationTest extends BaseControllerTest {
         itemDTO.setMedicineId(testMedId);
         itemDTO.setQuantity(2);
         pDto.setItems(Arrays.asList(itemDTO));
-        
+
         Prescription p = prescriptionService.createPrescription(pDto);
         testPrescriptionId = p.getMainId();
 
@@ -153,12 +154,12 @@ class CashierWorkflowIntegrationTest extends BaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalAmount").value(40.00))
                 .andReturn().getResponse().getContentAsString();
-        
+
         Long chargeId = objectMapper.readTree(createResponse).get("data").get("id").asLong();
 
         // Step 2: 支付
         PaymentDTO payDto = new PaymentDTO();
-        payDto.setPaymentMethod((short) 3); 
+        payDto.setPaymentMethod((short) 3);
         payDto.setTransactionNo("TXN_" + UUID.randomUUID().toString().substring(0, 8));
         payDto.setPaidAmount(new BigDecimal("40.00"));
 
@@ -183,7 +184,7 @@ class CashierWorkflowIntegrationTest extends BaseControllerTest {
         // 验证：发药后处方状态应为 DISPENSED(3)
         Prescription prescriptionAfterDispense = prescriptionRepository.findById(testPrescriptionId).get();
         assertThat(prescriptionAfterDispense.getStatus()).isEqualTo(PrescriptionStatusEnum.DISPENSED.getCode());
-        
+
         // Step 4: 退费
         com.his.controller.ChargeController.RefundRequest refundReq = new com.his.controller.ChargeController.RefundRequest();
         refundReq.setRefundReason("患者不想要了");

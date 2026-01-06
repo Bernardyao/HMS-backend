@@ -1,19 +1,22 @@
 package com.his.config;
 
-import com.his.common.JwtUtils;
+import java.io.IOException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
+import com.his.common.JwtUtils;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JWT认证过滤器
@@ -117,26 +120,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String requestURI = request.getRequestURI();
             // 排除静态资源和Swagger相关路径的Debug日志，减少噪音
-            boolean isStaticResource = requestURI.startsWith("/webjars/") || 
-                                     requestURI.startsWith("/doc.html") || 
+            boolean isStaticResource = requestURI.startsWith("/webjars/") ||
+                                     requestURI.startsWith("/doc.html") ||
                                      requestURI.startsWith("/v3/api-docs") ||
                                      requestURI.startsWith("/favicon.ico") ||
                                      requestURI.startsWith("/swagger-resources");
 
             String authHeader = request.getHeader("Authorization");
             if (!isStaticResource) {
-                log.debug("请求路径: {}, Authorization Header: {}", 
-                    requestURI, 
+                log.debug("请求路径: {}, Authorization Header: {}",
+                    requestURI,
                     authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "null");
             }
-            
+
             // 从请求头中获取 Token
             String token = extractToken(request);
 
             // 只有当 Token 存在时才进行验证和处理
             if (token != null) {
                 log.debug("提取的Token(前30字符): {}...", token.substring(0, Math.min(30, token.length())));
-                
+
                 // 验证 Token 是否有效
                 if (jwtUtils.validateToken(token)) {
                     // 从 Token 中提取用户信息

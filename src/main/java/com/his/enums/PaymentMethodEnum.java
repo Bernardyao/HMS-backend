@@ -4,17 +4,17 @@ package com.his.enums;
  * 支付方式枚举
  */
 public enum PaymentMethodEnum {
-    
+
     /**
      * 现金
      */
     CASH((short) 1, "现金"),
-    
+
     /**
      * 银行卡
      */
     CARD((short) 2, "银行卡"),
-    
+
     /**
      * 微信
      */

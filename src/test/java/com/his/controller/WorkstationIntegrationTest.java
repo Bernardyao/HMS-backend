@@ -1,10 +1,10 @@
 package com.his.controller;
 
-import com.his.dto.MedicalRecordDTO;
-import com.his.dto.PrescriptionDTO;
-import com.his.entity.*;
-import com.his.repository.*;
-import com.his.test.base.BaseControllerTest;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -12,10 +12,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import com.his.dto.MedicalRecordDTO;
+import com.his.dto.PrescriptionDTO;
+import com.his.entity.*;
+import com.his.repository.*;
+import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -102,7 +103,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
         registration.setDepartment(department);
         registration = registrationRepository.save(registration);
         testRegistrationId = registration.getMainId();
-        
+
         // 5. 创建药品
         Medicine medicine = new Medicine();
         medicine.setMedicineCode("TEST001_" + timestamp);
@@ -390,7 +391,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
         PrescriptionDTO dto = new PrescriptionDTO();
         dto.setRegistrationId(999999L);  // 不存在的挂号单
         dto.setPrescriptionType((short) 1);
-        
+
         List<PrescriptionDTO.PrescriptionItemDTO> items = new ArrayList<>();
         PrescriptionDTO.PrescriptionItemDTO item = new PrescriptionDTO.PrescriptionItemDTO();
         item.setMedicineId(testMedicineId);
@@ -424,7 +425,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
         PrescriptionDTO dto = new PrescriptionDTO();
         dto.setRegistrationId(testRegistrationId);
         dto.setPrescriptionType((short) 1);
-        
+
         List<PrescriptionDTO.PrescriptionItemDTO> items = new ArrayList<>();
         PrescriptionDTO.PrescriptionItemDTO item = new PrescriptionDTO.PrescriptionItemDTO();
         item.setMedicineId(testMedicineId);

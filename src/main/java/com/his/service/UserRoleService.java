@@ -1,11 +1,12 @@
 package com.his.service;
 
-import com.his.vo.views.MedicineViews;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import com.his.vo.views.MedicineViews;
 
 /**
  * 用户角色视图解析服务

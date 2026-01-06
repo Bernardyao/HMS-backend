@@ -1,12 +1,7 @@
 package com.his.controller;
 
-import com.his.dto.RegistrationDTO;
-import com.his.entity.Department;
-import com.his.entity.Doctor;
-import com.his.repository.DepartmentRepository;
-import com.his.repository.DoctorRepository;
-import com.his.repository.PatientRepository;
-import com.his.test.base.BaseControllerTest;
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +10,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.his.dto.RegistrationDTO;
+import com.his.entity.Department;
+import com.his.entity.Doctor;
+import com.his.repository.DepartmentRepository;
+import com.his.repository.DoctorRepository;
+import com.his.repository.PatientRepository;
+import com.his.test.base.BaseControllerTest;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;

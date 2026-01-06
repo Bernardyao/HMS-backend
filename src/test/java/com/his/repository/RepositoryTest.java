@@ -1,6 +1,12 @@
 package com.his.repository;
 
-import com.his.entity.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,12 +15,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import com.his.entity.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,13 +48,13 @@ class RepositoryTest {
 
     @Autowired
     private ChargeDetailRepository chargeDetailRepository;
-    
+
     @Autowired
     private PrescriptionDetailRepository prescriptionDetailRepository;
-    
+
     @Autowired
     private PrescriptionRepository prescriptionRepository;
-    
+
     @Autowired
     private MedicalRecordRepository medicalRecordRepository;
 
@@ -207,7 +208,7 @@ class RepositoryTest {
         Department savedDept = departmentRepository.save(department);
 
         String timestamp = String.valueOf(System.currentTimeMillis());
-        
+
         // 创建医生
         Doctor doctor1 = createTestDoctor(savedDept);
         doctor1.setDoctorNo("D001_" + timestamp);
@@ -317,7 +318,7 @@ class RepositoryTest {
         patient = patientRepository.save(patient);
 
         String timestamp = String.valueOf(System.currentTimeMillis());
-        
+
         // 2. 创建收费主表
         Charge charge = new Charge();
         charge.setPatient(patient);

@@ -49,7 +49,7 @@ public interface PrescriptionService {
     /**
      * 获取待发药处方列表
      * 已审核(status=2)且未发药的处方
-     * 
+     *
      * @return 处方列表
      */
     java.util.List<Prescription> getPendingDispenseList();
@@ -60,7 +60,7 @@ public interface PrescriptionService {
      * 2. 更新状态为已发药(status=3)
      * 3. 记录发药人和发药时间
      * 4. 扣减药品库存
-     * 
+     *
      * @param id 处方ID
      * @param dispenseBy 发药人ID
      */
@@ -87,7 +87,7 @@ public interface PrescriptionService {
 
     /**
      * 获取药师今日工作统计
-     * 
+     *
      * @param pharmacistId 药师ID
      * @return 统计数据
      */
