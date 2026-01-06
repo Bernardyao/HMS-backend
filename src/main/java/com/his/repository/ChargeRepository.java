@@ -124,7 +124,6 @@ public interface ChargeRepository extends JpaRepository<Charge, Long>, JpaSpecif
               AND c.status = 1
               AND c.is_deleted = 0
               AND d.item_type = 'REGISTRATION'
-              AND d.is_deleted = 0
             LIMIT 1
         )
     """, nativeQuery = true)
@@ -144,7 +143,6 @@ public interface ChargeRepository extends JpaRepository<Charge, Long>, JpaSpecif
             WHERE d.item_id = :prescriptionId
               AND d.item_type = 'PRESCRIPTION'
               AND c.status = 1
-              AND d.is_deleted = 0
               AND c.is_deleted = 0
             LIMIT 1
         )

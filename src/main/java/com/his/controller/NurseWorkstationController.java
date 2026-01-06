@@ -7,10 +7,12 @@ import org.springframework.web.bind.annotation.*;
 
 import com.his.common.Result;
 import com.his.dto.NurseWorkstationDTO;
+import com.his.dto.PaymentDTO;
 import com.his.log.annotation.AuditLog;
 import com.his.log.annotation.AuditType;
 import com.his.service.NurseWorkstationService;
 import com.his.service.PatientService;
+import com.his.vo.ChargeVO;
 import com.his.vo.NurseRegistrationVO;
 import com.his.vo.PatientSearchVO;
 
@@ -136,6 +138,73 @@ public class NurseWorkstationController {
         } catch (Exception e) {
             log.error("搜索患者失败", e);
             return Result.error("搜索失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 护士站收取挂号费
+     *
+     * <p>为护士站提供一键收取挂号费的功能，患者无需到收费窗口单独缴费</p>
+     *
+     * <h3>使用场景</h3>
+     * <ul>
+     *   <li>患者在护士台挂号后，护士直接收取挂号费</li>
+     *   <li>简化患者就诊流程，提高就诊效率</li>
+     *   <li>减少患者在收费窗口排队等待时间</li>
+     * </ul>
+     *
+     * <h3>业务规则</h3>
+     * <ul>
+     *   <li>仅可为状态为"待就诊"的挂号缴费</li>
+     *   <li>自动检查是否已支付，防止重复收费</li>
+     *   <li>支付金额由系统自动填充，确保准确性</li>
+     *   <li>支付成功后，挂号状态自动更新为"已缴挂号费"</li>
+     *   <li>所有状态变更自动记录到审计日志</li>
+     * </ul>
+     *
+     * <h3>支付方式</h3>
+     * <ul>
+     *   <li>1 - 现金</li>
+     *   <li>2 - 银行卡</li>
+     *   <li>3 - 微信</li>
+     *   <li>4 - 支付宝</li>
+     *   <li>5 - 医保</li>
+     * </ul>
+     *
+     * @param id 挂号单ID
+     * @param paymentDTO 支付信息（包含支付方式和可选的交易流水号）
+     * @return 支付后的收费单信息
+     */
+    @Operation(
+            summary = "护士站收取挂号费",
+            description = "护士在护士站直接收取患者的挂号费，无需患者到收费窗口单独缴费。系统自动填充支付金额，确保与挂号费一致"
+    )
+    @PostMapping("/registrations/{id}/pay")
+    @AuditLog(
+            module = "护士工作站",
+            action = "收取挂号费",
+            description = "护士站收取患者挂号费",
+            auditType = AuditType.FINANCIAL_OPERATION
+    )
+    public Result<ChargeVO> payRegistrationFee(
+            @Parameter(description = "挂号单ID", required = true, example = "1")
+            @PathVariable Long id,
+            @Parameter(description = "支付信息", required = true)
+            @RequestBody PaymentDTO paymentDTO
+    ) {
+        try {
+            log.info("护士站收取挂号费，挂号ID: {}, 支付方式: {}", id, paymentDTO.getPaymentMethod());
+            ChargeVO charge = nurseWorkstationService.payRegistrationFee(id, paymentDTO);
+            return Result.success("收费成功", charge);
+        } catch (IllegalArgumentException e) {
+            log.warn("收费参数错误: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            log.warn("收费状态错误: {}", e.getMessage());
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("收费失败，挂号ID: {}", id, e);
+            return Result.error("收费失败: " + e.getMessage());
         }
     }
 }

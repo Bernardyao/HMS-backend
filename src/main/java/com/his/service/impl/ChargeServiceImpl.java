@@ -27,6 +27,7 @@ import com.his.monitoring.SequenceGenerationMetrics;
 import com.his.repository.*;
 import com.his.service.ChargeService;
 import com.his.service.PrescriptionService;
+import com.his.service.RegistrationStateMachine;
 import com.his.vo.ChargeVO;
 import com.his.vo.DailySettlementVO;
 
@@ -96,6 +97,7 @@ public class ChargeServiceImpl implements ChargeService {
     private final RegistrationRepository registrationRepository;
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionService prescriptionService;
+    private final RegistrationStateMachine registrationStateMachine;
 
     // 监控指标
     private final SequenceGenerationMetrics sequenceMetrics;
@@ -383,13 +385,33 @@ public class ChargeServiceImpl implements ChargeService {
         if (charge.getDetails() != null) {
             for (ChargeDetail detail : charge.getDetails()) {
                 if ("REGISTRATION".equals(detail.getItemType())) {
-                    // 【新增】更新挂号状态为 PAID_REGISTRATION
+                    // 【重构】使用状态机更新挂号状态为 PAID_REGISTRATION，确保审计日志
                     Registration registration = charge.getRegistration();
                     if (registration != null && RegStatusEnum.WAITING.getCode().equals(registration.getStatus())) {
-                        registration.setStatus(RegStatusEnum.PAID_REGISTRATION.getCode());
-                        registration.setUpdatedAt(LocalDateTime.now());
-                        registrationRepository.save(registration);
-                        log.info("挂号状态已更新为已缴挂号费，挂号ID: {}", registration.getMainId());
+                        try {
+                            // 尝试从安全上下文获取当前操作人信息，如果失败则使用系统默认
+                            Long operatorId = null;
+                            String operatorName = "SYSTEM";
+                            try {
+                                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+                            } catch (Exception se) {
+                                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", se.getMessage());
+                            }
+
+                            registrationStateMachine.transition(
+                                registration.getMainId(),
+                                RegStatusEnum.WAITING,
+                                RegStatusEnum.PAID_REGISTRATION,
+                                operatorId,
+                                operatorName,
+                                "支付挂号费"
+                            );
+                            log.info("挂号状态已更新为已缴挂号费，挂号ID: {}", registration.getMainId());
+                        } catch (Exception e) {
+                            log.error("更新挂号状态失败，挂号ID: {}", registration.getMainId(), e);
+                            throw new RuntimeException("更新挂号状态失败: " + e.getMessage(), e);
+                        }
                     }
                 } else if ("PRESCRIPTION".equals(detail.getItemType())) {
                     Prescription prescription = prescriptionRepository.findById(detail.getItemId())

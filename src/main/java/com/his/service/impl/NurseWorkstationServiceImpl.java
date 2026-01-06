@@ -13,12 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.his.dto.NurseWorkstationDTO;
+import com.his.dto.PaymentDTO;
+import com.his.entity.Charge;
 import com.his.entity.Registration;
+import com.his.enums.ChargeStatusEnum;
 import com.his.enums.GenderEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.enums.VisitTypeEnum;
+import com.his.repository.ChargeRepository;
 import com.his.repository.RegistrationRepository;
+import com.his.service.ChargeService;
 import com.his.service.NurseWorkstationService;
+import com.his.vo.ChargeVO;
 import com.his.vo.NurseRegistrationVO;
 
 import lombok.RequiredArgsConstructor;
@@ -73,6 +79,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NurseWorkstationServiceImpl implements NurseWorkstationService {
 
     private final RegistrationRepository registrationRepository;
+    private final ChargeRepository chargeRepository;
+    private final ChargeService chargeService;
 
     /**
      * 获取挂号列表（支持多条件查询）
@@ -258,5 +266,99 @@ public class NurseWorkstationServiceImpl implements NurseWorkstationService {
             return phone;
         }
         return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
+
+    /**
+     * 护士站收取挂号费
+     *
+     * <p>为护士站提供一键收取挂号费的功能，无需患者到收费窗口</p>
+     *
+     * <p><b>实现逻辑：</b></p>
+     * <ol>
+     *   <li>验证挂号单存在且状态为 WAITING</li>
+     *   <li>检查挂号费是否已支付（防止重复收费）</li>
+     *   <li>查找或创建收费单：
+     *       <ul>
+     *         <li>查找已存在的未支付挂号收费单</li>
+     *         <li>如果不存在，创建新的挂号收费单</li>
+     *       </ul>
+     *   </li>
+     *   <li>自动填充支付金额：从收费单获取实际金额</li>
+     *   <li>生成交易流水号：如果未提供，自动生成格式为 NR_REG_{regId}_{timestamp}</li>
+     *   <li>调用收费服务完成支付（内部会触发状态机更新挂号状态）</li>
+     * </ol>
+     *
+     * @param registrationId 挂号单ID
+     * @param paymentDTO 支付信息（必须包含 paymentMethod，可选 transactionNo）
+     * @return 支付后的收费单信息
+     * @throws IllegalArgumentException 如果挂号单不存在或状态不为 WAITING
+     * @throws IllegalStateException 如果挂号费已支付
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ChargeVO payRegistrationFee(Long registrationId, PaymentDTO paymentDTO) {
+        log.info("护士站开始收取挂号费，挂号ID: {}", registrationId);
+
+        // 1. 检查是否已支付（防止重复收费，最优先检查）
+        if (chargeService.isRegistrationFeePaid(registrationId)) {
+            throw new IllegalStateException("该挂号的挂号费已支付，无需重复缴费");
+        }
+
+        // 2. 验证挂号单状态
+        Registration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new IllegalArgumentException("挂号单不存在，ID: " + registrationId));
+
+        if (!RegStatusEnum.WAITING.getCode().equals(registration.getStatus())) {
+            throw new IllegalArgumentException("挂号单状态不正确，当前状态: " + RegStatusEnum.fromCode(registration.getStatus()).getDescription() + "，仅可为待就诊状态的挂号缴费");
+        }
+
+        // 3. 查找或创建收费单
+        Charge existingCharge = findUnpaidRegistrationCharge(registrationId);
+        ChargeVO charge;
+
+        if (existingCharge != null) {
+            log.info("找到已存在的未支付挂号收费单，收费单ID: {}", existingCharge.getMainId());
+            charge = chargeService.getById(existingCharge.getMainId());
+        } else {
+            log.info("创建新的挂号收费单，挂号ID: {}", registrationId);
+            charge = chargeService.createRegistrationCharge(registrationId);
+        }
+
+        // 4. 自动填充支付金额
+        paymentDTO.setPaidAmount(charge.getTotalAmount());
+
+        // 5. 生成交易流水号（如果未提供）
+        if (paymentDTO.getTransactionNo() == null || paymentDTO.getTransactionNo().isEmpty()) {
+            String transactionNo = String.format("NR_REG_%d_%d", registrationId, System.currentTimeMillis());
+            paymentDTO.setTransactionNo(transactionNo);
+            log.info("自动生成交易流水号: {}", transactionNo);
+        }
+
+        // 6. 调用收费服务完成支付
+        ChargeVO result = chargeService.processPayment(charge.getId(), paymentDTO);
+        log.info("护士站收取挂号费成功，挂号ID: {}, 收费单ID: {}", registrationId, result.getId());
+
+        return result;
+    }
+
+    /**
+     * 查找未支付的挂号收费单
+     *
+     * <p>在创建新收费单前，先检查是否已存在未支付的挂号收费单，避免重复创建</p>
+     *
+     * @param registrationId 挂号单ID
+     * @return 未支付的挂号收费单，如果不存在返回 null
+     */
+    private Charge findUnpaidRegistrationCharge(Long registrationId) {
+        List<Charge> charges = chargeRepository.findByRegistration_MainIdAndChargeTypeAndIsDeleted(
+                registrationId,
+                (short) 1, // 1=仅挂号费
+                (short) 0  // 未删除
+        );
+
+        return charges.stream()
+                .filter(c -> ChargeStatusEnum.UNPAID.getCode().equals(c.getStatus()))
+                .findFirst()
+                .orElse(null);
     }
 }

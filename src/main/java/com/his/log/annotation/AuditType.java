@@ -36,7 +36,13 @@ public enum AuditType {
      * 敏感操作
      * 例如：查看完整身份证号、导出敏感数据
      */
-    SENSITIVE_OPERATION("敏感操作");
+    SENSITIVE_OPERATION("敏感操作"),
+
+    /**
+     * 财务操作
+     * 例如：收费、退费、结算
+     */
+    FINANCIAL_OPERATION("财务操作");
 
     private final String description;
 
