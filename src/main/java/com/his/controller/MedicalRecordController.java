@@ -141,7 +141,7 @@ public class MedicalRecordController {
     @PostMapping("/{id}/submit")
     public Result<Void> submit(
             @Parameter(description = "病历ID", required = true, example = "1")
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
         try {
             log.info("收到提交病历请求，ID: {}", id);
             medicalRecordService.submit(id);

@@ -101,10 +101,10 @@ public class PrescriptionController {
     public Result<Void> review(
             @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable("id") Long id,
-            @Parameter(description = "审核医生ID", required = true, example = "1")
-            @RequestParam("reviewDoctorId") Long reviewDoctorId,
+            @Parameter(description = "审核医生ID", required = false, example = "1")
+            @RequestParam(name = "reviewDoctorId", required = false) Long reviewDoctorId,
             @Parameter(description = "审核备注", example = "处方合理，准予发药")
-            @RequestParam(value = "remark", required = false) String remark) {
+            @RequestParam(name = "remark", required = false) String remark) {
 
         log.info("【医生】审核处方 - ID: {}, 审核医生ID: {}", id, reviewDoctorId);
         prescriptionService.review(id, reviewDoctorId, remark);

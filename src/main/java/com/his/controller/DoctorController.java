@@ -100,9 +100,9 @@ public class DoctorController {
     @GetMapping("/waiting-list")
     public Result<List<RegistrationVO>> getWaitingList(
             @Parameter(description = "是否显示科室所有患者（false=个人视图，true=科室视图）", required = false, example = "false")
-            @RequestParam(defaultValue = "false") boolean showAll,
+            @RequestParam(name = "showAll", defaultValue = "false") boolean showAll,
             @Parameter(description = "管理员指定查看的医生ID（仅管理员有效）", required = false)
-            @RequestParam(required = false) Long adminDoctorId) {
+            @RequestParam(name = "adminDoctorId", required = false) Long adminDoctorId) {
         try {
             Long doctorId;
             Long deptId;
@@ -192,9 +192,9 @@ public class DoctorController {
     @PutMapping("/registrations/{id}/status")
     public Result<Void> updateStatus(
             @Parameter(description = "挂号记录ID", required = true, example = "1")
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(description = "新状态码（0=待就诊, 1=已就诊, 2=已取消, 3=已退号）", required = true, example = "1")
-            @RequestParam Short status) {
+            @RequestParam("status") Short status) {
         try {
             // 防御性编程: 参数验证
             if (id == null) {
@@ -280,9 +280,9 @@ public class DoctorController {
     @GetMapping("/patients/{id}")
     public Result<PatientDetailVO> getPatientDetail(
             @Parameter(description = "患者ID", required = true, example = "1")
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(description = "管理员指定查看的患者ID（仅管理员有效）", required = false)
-            @RequestParam(required = false) Long adminPatientId) {
+            @RequestParam(name = "adminPatientId", required = false) Long adminPatientId) {
         try {
             Long patientId;
 

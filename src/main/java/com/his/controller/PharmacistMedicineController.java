@@ -104,13 +104,13 @@ public class PharmacistMedicineController {
     @PutMapping("/{id}/stock")
     public Result<String> updateStock(
         @Parameter(description = "药品ID", required = true, example = "1")
-        @PathVariable Long id,
+        @PathVariable("id") Long id,
 
         @Parameter(description = "更新数量（正数=入库，负数=出库）", required = true, example = "100")
-        @RequestParam Integer quantity,
+        @RequestParam("quantity") Integer quantity,
 
         @Parameter(description = "操作原因", required = true, example = "采购入库")
-        @RequestParam String reason) {
+        @RequestParam("reason") String reason) {
 
         log.info("【药师】更新药品库存 - 药品ID: {}, 数量: {}, 原因: {}", id, quantity, reason);
 

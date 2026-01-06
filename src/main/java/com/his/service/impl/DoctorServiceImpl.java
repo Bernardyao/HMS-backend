@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.his.common.CommonConstants;
 import com.his.converter.VoConverter;
 import com.his.entity.Department;
 import com.his.entity.Doctor;
@@ -164,13 +165,13 @@ public class DoctorServiceImpl implements DoctorService {
             }
 
             // 防御性编程3: 验证科室是否被删除
-            if (department.getIsDeleted() != null && department.getIsDeleted() == 1) {
+            if (department.getIsDeleted() != null && department.getIsDeleted().equals(CommonConstants.DELETED)) {
                 log.warn("查询候诊列表失败: 科室已被删除，ID: {}, 名称: {}", deptId, department.getName());
                 throw new IllegalArgumentException("科室已停用: " + department.getName());
             }
 
             // 防御性编程4: 验证科室是否启用
-            if (department.getStatus() != null && department.getStatus() == 0) {
+            if (department.getStatus() != null && department.getStatus().equals(CommonConstants.STATUS_DISABLED)) {
                 log.warn("查询候诊列表失败: 科室已停用，ID: {}, 名称: {}", deptId, department.getName());
                 throw new IllegalArgumentException("科室已停用: " + department.getName());
             }
@@ -245,7 +246,7 @@ public class DoctorServiceImpl implements DoctorService {
                 });
 
         // 防御性编程3: 检查记录是否被删除
-        if (registration.getIsDeleted() != null && registration.getIsDeleted() == 1) {
+        if (registration.getIsDeleted() != null && registration.getIsDeleted().equals(CommonConstants.DELETED)) {
             log.warn("更新挂号状态失败: 挂号记录已被删除，ID: {}", regId);
             throw new IllegalArgumentException("该挂号记录已被删除，无法操作");
         }
@@ -265,12 +266,6 @@ public class DoctorServiceImpl implements DoctorService {
             currentStatusDesc = RegStatusEnum.fromCode(registration.getStatus()).getDescription();
         } catch (Exception e) {
             log.warn("无法解析当前状态码: {}", registration.getStatus());
-        }
-
-        // 防御性编程5: 如果状态已经是一致的，直接返回成功（幂等性）
-        if (registration.getStatus() != null && registration.getStatus().equals(newStatus.getCode())) {
-            log.info("挂号状态更新请求：状态未变化，挂号ID: {}, 当前状态: {}", regId, currentStatusDesc);
-            return;
         }
 
         // 【关键修复】使用状态机更新状态，确保审计日志和状态转换验证
@@ -352,7 +347,7 @@ public class DoctorServiceImpl implements DoctorService {
                 });
 
         // 防御性编程3: 检查记录是否被删除
-        if (registration.getIsDeleted() != null && registration.getIsDeleted() == 1) {
+        if (registration.getIsDeleted() != null && registration.getIsDeleted().equals(CommonConstants.DELETED)) {
             log.warn("【IDOR防御】验证失败: 挂号记录已被删除，ID: {}, 医生ID: {}", regId, currentDoctorId);
             throw new IllegalArgumentException("该挂号记录已被删除，无法操作");
         }
@@ -413,7 +408,7 @@ public class DoctorServiceImpl implements DoctorService {
                 });
 
         // 防御性编程3: 检查是否被删除
-        if (patient.getIsDeleted() != null && patient.getIsDeleted() == 1) {
+        if (patient.getIsDeleted() != null && patient.getIsDeleted().equals(CommonConstants.DELETED)) {
             log.warn("查询患者详细信息失败: 患者已被删除，ID: {}", patientId);
             throw new IllegalArgumentException("该患者档案已被删除");
         }
@@ -532,7 +527,7 @@ public class DoctorServiceImpl implements DoctorService {
                 });
 
         // 检查是否被删除
-        if (doctor.getIsDeleted() != null && doctor.getIsDeleted() == 1) {
+        if (doctor.getIsDeleted() != null && doctor.getIsDeleted().equals(CommonConstants.DELETED)) {
             log.warn("验证医生失败: 医生已被删除，ID: {}, 姓名: {}", doctorId, doctor.getName());
             throw new IllegalArgumentException("该医生已被删除，无法操作");
         }
@@ -544,7 +539,7 @@ public class DoctorServiceImpl implements DoctorService {
         }
 
         // 检查科室是否被删除
-        if (doctor.getDepartment().getIsDeleted() != null && doctor.getDepartment().getIsDeleted() == 1) {
+        if (doctor.getDepartment().getIsDeleted() != null && doctor.getDepartment().getIsDeleted().equals(CommonConstants.DELETED)) {
             log.warn("验证医生失败: 医生所属科室已被删除，医生ID: {}, 科室ID: {}",
                     doctorId, doctor.getDepartment().getMainId());
             throw new IllegalArgumentException("医生所属科室已被删除，无法操作");

@@ -14,9 +14,11 @@ import org.springframework.util.StringUtils;
 
 import com.his.dto.NurseWorkstationDTO;
 import com.his.dto.PaymentDTO;
+import com.his.common.CommonConstants;
 import com.his.entity.Charge;
 import com.his.entity.Registration;
 import com.his.enums.ChargeStatusEnum;
+import com.his.enums.ChargeTypeEnum;
 import com.his.enums.GenderEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.enums.VisitTypeEnum;
@@ -129,7 +131,7 @@ public class NurseWorkstationServiceImpl implements NurseWorkstationService {
             List<Predicate> predicates = new ArrayList<>();
 
             // 未删除
-            predicates.add(cb.equal(root.get("isDeleted"), (short) 0));
+            predicates.add(cb.equal(root.get("isDeleted"), CommonConstants.NORMAL));
 
             // 就诊日期
             predicates.add(cb.equal(root.get("visitDate"), visitDate));
@@ -352,8 +354,8 @@ public class NurseWorkstationServiceImpl implements NurseWorkstationService {
     private Charge findUnpaidRegistrationCharge(Long registrationId) {
         List<Charge> charges = chargeRepository.findByRegistration_MainIdAndChargeTypeAndIsDeleted(
                 registrationId,
-                (short) 1, // 1=仅挂号费
-                (short) 0  // 未删除
+                ChargeTypeEnum.REGISTRATION_ONLY.getCode(), // 1=仅挂号费
+                CommonConstants.NORMAL  // 未删除
         );
 
         return charges.stream()

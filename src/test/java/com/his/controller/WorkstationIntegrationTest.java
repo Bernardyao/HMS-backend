@@ -129,7 +129,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
         record.setDoctor(doctor);
         record.setChiefComplaint("测试主诉");
         record.setDiagnosis("测试诊断");
-        record.setStatus((short) 1);
+        record.setStatus((short) 0); // 修改为草稿状态，允许测试中的更新
         record.setIsDeleted((short) 0);
         record = medicalRecordRepository.save(record);
         testRecordId = record.getMainId();
@@ -143,7 +143,7 @@ public class WorkstationIntegrationTest extends BaseControllerTest {
         prescription.setPrescriptionType((short) 1);
         prescription.setTotalAmount(new BigDecimal("25.00"));
         prescription.setItemCount(2);
-        prescription.setStatus((short) 1);  // 已开方
+        prescription.setStatus((short) 1);  // 设置为已开方状态，以满足审核接口的前置条件
         prescription.setValidityDays(3);
         prescription.setIsDeleted((short) 0);
         prescription = prescriptionRepository.save(prescription);

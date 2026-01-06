@@ -92,9 +92,9 @@ class ChargeServiceRegistrationRefactorTest extends BaseServiceTest {
             eq(registrationId),
             eq(RegStatusEnum.WAITING),
             eq(RegStatusEnum.PAID_REGISTRATION),
-            isNull(), // operatorId (ChargeServiceImpl 目前不传 user info，可能需要从 context 获取或者传 null)
-            isNull(), // operatorName
-            contains("收费单支付") // reason
+            any(), // operatorId
+            anyString(), // operatorName
+            eq("支付挂号费") // reason
         );
 
         // 验证不再直接调用 registrationRepository.save 来更新状态

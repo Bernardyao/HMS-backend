@@ -175,28 +175,28 @@ public class CommonMedicineController {
     )
     public Result<Page<MedicineVO>> search(
         @Parameter(description = "关键字（名称/编码/通用名）", example = "阿莫西林")
-        @RequestParam(required = false) String keyword,
+        @RequestParam(name = "keyword", required = false) String keyword,
 
         @Parameter(description = "药品分类", example = "抗生素")
-        @RequestParam(required = false) String category,
+        @RequestParam(name = "category", required = false) String category,
 
         @Parameter(description = "是否处方药（0=否, 1=是）", example = "1")
-        @RequestParam(required = false) Short isPrescription,
+        @RequestParam(name = "isPrescription", required = false) Short isPrescription,
 
         @Parameter(description = "是否只显示有货药品", example = "true")
-        @RequestParam(required = false) Boolean inStock,
+        @RequestParam(name = "inStock", required = false) Boolean inStock,
 
         @Parameter(description = "库存状态（LOW=低库存, OUT=缺货，仅药师有效）", example = "LOW")
-        @RequestParam(required = false) String stockStatus,
+        @RequestParam(name = "stockStatus", required = false) String stockStatus,
 
         @Parameter(description = "生产厂家（仅药师有效）", example = "某某制药有限公司")
-        @RequestParam(required = false) String manufacturer,
+        @RequestParam(name = "manufacturer", required = false) String manufacturer,
 
         @Parameter(description = "最低价格（元，仅药师有效）", example = "10")
-        @RequestParam(required = false) BigDecimal minPrice,
+        @RequestParam(name = "minPrice", required = false) BigDecimal minPrice,
 
         @Parameter(description = "最高价格（元，仅药师有效）", example = "50")
-        @RequestParam(required = false) BigDecimal maxPrice,
+        @RequestParam(name = "maxPrice", required = false) BigDecimal maxPrice,
 
         @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC)
         @Parameter(description = "分页和排序参数")
@@ -313,7 +313,7 @@ public class CommonMedicineController {
     )
     public Result<List<MedicineVO>> searchSimple(
         @Parameter(description = "关键字（药品名称或编码）", example = "阿莫西林")
-        @RequestParam(required = false) String keyword) {
+        @RequestParam(name = "keyword", required = false) String keyword) {
 
         log.info("【通用】搜索药品（简化版），关键字: {}", keyword);
 

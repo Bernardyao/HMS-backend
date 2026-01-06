@@ -10,8 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.his.dto.PrescriptionDTO;
+import com.his.common.CommonConstants;
 import com.his.entity.*;
 import com.his.enums.PrescriptionStatusEnum;
+import com.his.enums.PrescriptionTypeEnum;
 import com.his.repository.*;
 import com.his.service.PrescriptionService;
 
@@ -146,12 +148,12 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         Registration registration = registrationRepository.findById(dto.getRegistrationId())
                 .orElseThrow(() -> new IllegalArgumentException("挂号单不存在，ID: " + dto.getRegistrationId()));
 
-        if (registration.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(registration.getIsDeleted())) {
             throw new IllegalArgumentException("挂号单已被删除");
         }
 
         MedicalRecord medicalRecord = medicalRecordRepository
-                .findByRegistration_MainIdAndIsDeleted(dto.getRegistrationId(), (short) 0)
+                .findByRegistration_MainIdAndIsDeleted(dto.getRegistrationId(), CommonConstants.NORMAL)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "请先创建病历再开处方，挂号单ID: " + dto.getRegistrationId()));
 
@@ -165,11 +167,11 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             Medicine medicine = medicineRepository.findById(itemDTO.getMedicineId())
                     .orElseThrow(() -> new IllegalArgumentException("药品不存在，ID: " + itemDTO.getMedicineId()));
 
-            if (medicine.getIsDeleted() == 1) {
+            if (CommonConstants.DELETED.equals(medicine.getIsDeleted())) {
                 throw new IllegalArgumentException("药品已被删除，ID: " + itemDTO.getMedicineId());
             }
 
-            if (medicine.getStatus() != 1) {
+            if (!CommonConstants.STATUS_ENABLED.equals(medicine.getStatus())) {
                 throw new IllegalArgumentException("药品已停用，ID: " + itemDTO.getMedicineId());
             }
 
@@ -233,7 +235,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         Prescription prescription = prescriptionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + id));
 
-        if (prescription.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(prescription.getIsDeleted())) {
             throw new IllegalArgumentException("处方已被删除，ID: " + id);
         }
 
@@ -261,7 +263,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             throw new IllegalArgumentException("病历ID不能为空");
         }
 
-        List<Prescription> prescriptions = prescriptionRepository.findByMedicalRecord_MainIdAndIsDeleted(recordId, (short) 0);
+        List<Prescription> prescriptions = prescriptionRepository.findByMedicalRecord_MainIdAndIsDeleted(recordId, CommonConstants.NORMAL);
 
         prescriptions.forEach(this::initializeLazyFields);
 
@@ -339,7 +341,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         log.info("查询待发药处方列表");
         // 查询状态为已缴费(5)的处方
         List<Prescription> prescriptions = prescriptionRepository.findByStatusAndIsDeleted(
-                PrescriptionStatusEnum.PAID.getCode(), (short) 0);
+                PrescriptionStatusEnum.PAID.getCode(), CommonConstants.NORMAL);
         prescriptions.forEach(this::initializeLazyFields);
         return prescriptions;
     }
@@ -402,7 +404,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         }
 
         // 直接查询处方明细列表
-        List<PrescriptionDetail> details = prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(id, (short) 0);
+        List<PrescriptionDetail> details = prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(id, CommonConstants.NORMAL);
         if (details == null || details.isEmpty()) {
             throw new IllegalStateException("处方明细为空，无法发药");
         }
@@ -521,7 +523,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         log.info("恢复处方库存，处方ID: {}", id);
 
         // 直接查询处方明细列表
-        List<PrescriptionDetail> details = prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(id, (short) 0);
+        List<PrescriptionDetail> details = prescriptionDetailRepository.findByPrescription_MainIdAndIsDeletedOrderBySortOrder(id, CommonConstants.NORMAL);
 
         if (details != null && !details.isEmpty()) {
             for (PrescriptionDetail detail : details) {
@@ -613,10 +615,10 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         prescription.setMedicalRecord(medicalRecord);
         prescription.setPatient(registration.getPatient());
         prescription.setDoctor(registration.getDoctor());
-        prescription.setPrescriptionType(dto.getPrescriptionType() != null ? dto.getPrescriptionType() : (short) 1);
+        prescription.setPrescriptionType(dto.getPrescriptionType() != null ? dto.getPrescriptionType() : PrescriptionTypeEnum.WESTERN_MEDICINE.getCode());
         prescription.setValidityDays(dto.getValidityDays() != null ? dto.getValidityDays() : 3);
         prescription.setStatus(PrescriptionStatusEnum.DRAFT.getCode()); // 0=草稿
-        prescription.setIsDeleted((short) 0);
+        prescription.setIsDeleted(CommonConstants.NORMAL);
         prescription.setCreatedAt(LocalDateTime.now());
         prescription.setUpdatedAt(LocalDateTime.now());
         return prescription;
@@ -642,7 +644,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         detail.setRoute(itemDTO.getRoute());
         detail.setDays(itemDTO.getDays());
         detail.setInstructions(itemDTO.getInstructions());
-        detail.setIsDeleted((short) 0);
+        detail.setIsDeleted(CommonConstants.NORMAL);
         detail.setCreatedAt(LocalDateTime.now());
         detail.setUpdatedAt(LocalDateTime.now());
         return detail;

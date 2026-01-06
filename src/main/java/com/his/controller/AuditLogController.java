@@ -112,26 +112,26 @@ public class AuditLogController {
     @Operation(summary = "综合查询审计日志", description = "支持多条件组合查询（模块、操作、操作人、类型、时间范围），仅管理员可访问")
     public Result<Page<AuditLogEntity>> searchAuditLogs(
             @Parameter(description = "模块名称（如：认证管理、挂号管理）")
-            @RequestParam(required = false) String module,
+            @RequestParam(name = "module", required = false) String module,
 
             @Parameter(description = "操作描述（如：用户登录、患者挂号）")
-            @RequestParam(required = false) String action,
+            @RequestParam(name = "action", required = false) String action,
 
             @Parameter(description = "操作人用户名")
-            @RequestParam(required = false) String operatorUsername,
+            @RequestParam(name = "operatorUsername", required = false) String operatorUsername,
 
             @Parameter(description = "审计类型（SENSITIVE_OPERATION、BUSINESS、DATA_ACCESS）")
-            @RequestParam(required = false) String auditType,
+            @RequestParam(name = "auditType", required = false) String auditType,
 
             @Parameter(description = "查询开始时间（格式：yyyy-MM-ddTHH:mm:ss）")
-            @RequestParam(required = false)
+            @RequestParam(name = "startTime", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
 
             @Parameter(description = "查询结束时间（格式：yyyy-MM-ddTHH:mm:ss）")
-            @RequestParam(required = false)
+            @RequestParam(name = "endTime", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
 
-            @Parameter(description = "分页参数（page: 页码从0开始，size: 每页大小，sort: 排序字段和方向）")
+            @Parameter(description = "分页参数（page: 页码从0开始，size: 每页大小，sort: 排序字段 and 方向）")
             @PageableDefault(size = 20) Pageable pageable) {
 
         Page<AuditLogEntity> logs = auditLogQueryService.searchAuditLogs(
@@ -163,10 +163,10 @@ public class AuditLogController {
      * @since 1.0
      */
     @GetMapping("/trace/{traceId}")
-    @Operation(summary = "根据TraceId查询审计日志", description = "查询整个请求链路的所有审计日志，用于问题排查和性能分析")
+    @Operation(summary = "根据TraceId查询审计日志", description = "查询整个请求链路的所有审计日志，用于问题排查 and 性能分析")
     public Result<List<AuditLogEntity>> getAuditLogsByTraceId(
             @Parameter(description = "链路追踪ID（32位十六进制字符串）")
-            @PathVariable String traceId) {
+            @PathVariable("traceId") String traceId) {
 
         List<AuditLogEntity> logs = auditLogQueryService.getAuditLogsByTraceId(traceId);
         return Result.success(logs);
@@ -175,7 +175,7 @@ public class AuditLogController {
     /**
      * 查询操作人的审计日志
      *
-     * <p>查询某个用户的所有审计日志,包括敏感操作和业务操作</p>
+     * <p>查询某个用户的所有审计日志,包括敏感操作 and 业务操作</p>
      *
      * <p><b>使用场景：</b></p>
      * <ul>
@@ -194,10 +194,10 @@ public class AuditLogController {
      * @since 1.0
      */
     @GetMapping("/operator/{operatorId}")
-    @Operation(summary = "查询操作人的审计日志", description = "查询某个用户的所有审计日志，用于用户行为审计和安全调查")
+    @Operation(summary = "查询操作人的审计日志", description = "查询某个用户的所有审计日志，用于用户行为审计 and 安全调查")
     public Result<List<AuditLogEntity>> getAuditLogsByOperator(
             @Parameter(description = "操作人ID（sys_user.id）")
-            @PathVariable Long operatorId) {
+            @PathVariable("operatorId") Long operatorId) {
 
         List<AuditLogEntity> logs = auditLogQueryService.getAuditLogsByOperator(operatorId);
         return Result.success(logs);

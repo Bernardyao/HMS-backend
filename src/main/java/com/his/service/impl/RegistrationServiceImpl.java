@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.his.common.DataMaskingUtils;
+import com.his.common.CommonConstants;
 import com.his.dto.PaymentDTO;
 import com.his.dto.RegistrationDTO;
 import com.his.entity.Charge;
@@ -20,6 +21,7 @@ import com.his.entity.Doctor;
 import com.his.entity.Patient;
 import com.his.entity.Registration;
 import com.his.enums.ChargeStatusEnum;
+import com.his.enums.ChargeTypeEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.log.utils.LogUtils;
 import com.his.repository.ChargeRepository;
@@ -196,7 +198,7 @@ public class RegistrationServiceImpl implements RegistrationService {
                 patient.getMainId(), doctor.getMainId(), today);
 
         boolean alreadyRegistered = registrationRepository.existsByPatientAndDoctorAndDateAndStatusWaiting(
-                patient.getMainId(), doctor.getMainId(), today, (short) 0, (short) 0);
+                patient.getMainId(), doctor.getMainId(), today, RegStatusEnum.WAITING.getCode(), CommonConstants.NORMAL);
 
         log.info("重复挂号检查结果: alreadyRegistered = {}", alreadyRegistered);
 
@@ -322,10 +324,10 @@ public class RegistrationServiceImpl implements RegistrationService {
             log.info("挂号已支付，执行自动退费，挂号ID: {}", id);
             try {
                 // 查找挂号费收费单（chargeType=1表示挂号费）
-                List<Charge> charges = chargeRepository.findByRegistration_MainIdAndIsDeleted(id, (short) 0);
+                List<Charge> charges = chargeRepository.findByRegistration_MainIdAndIsDeleted(id, CommonConstants.NORMAL);
                 Optional<Charge> registrationCharge = charges.stream()
-                        .filter(c -> c.getChargeType() == 1) // 挂号费类型
-                        .filter(c -> c.getStatus() == ChargeStatusEnum.PAID.getCode()) // 已支付状态
+                        .filter(c -> ChargeTypeEnum.REGISTRATION_ONLY.getCode().equals(c.getChargeType())) // 挂号费类型
+                        .filter(c -> ChargeStatusEnum.PAID.getCode().equals(c.getStatus())) // 已支付状态
                         .findFirst();
 
                 if (registrationCharge.isEmpty()) {
@@ -435,7 +437,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private Patient findOrCreatePatient(RegistrationDTO dto) {
         // 根据身份证号查询患者
         Optional<Patient> existingPatient = patientRepository.findByIdCardAndIsDeleted(
-                dto.getIdCard(), (short) 0);
+                dto.getIdCard(), CommonConstants.NORMAL);
 
         if (existingPatient.isPresent()) {
             log.info("找到已有患者，患者ID: {}", existingPatient.get().getMainId());
@@ -450,7 +452,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         newPatient.setGender(dto.getGender());
         newPatient.setAge(dto.getAge());
         newPatient.setPhone(dto.getPhone());
-        newPatient.setIsDeleted((short) 0);
+        newPatient.setIsDeleted(CommonConstants.NORMAL);
 
         Patient savedPatient = patientRepository.save(newPatient);
         log.info("新患者建档成功，患者ID: {}, 病历号: {}",
@@ -470,10 +472,10 @@ public class RegistrationServiceImpl implements RegistrationService {
         registration.setDepartment(department);
         registration.setDoctor(doctor);
         registration.setVisitDate(LocalDate.now());
-        registration.setVisitType((short) 1); // 默认初诊
+        registration.setVisitType(CommonConstants.VISIT_TYPE_FIRST); // 默认初诊
         registration.setRegistrationFee(dto.getRegFee());
         registration.setStatus(RegStatusEnum.WAITING.getCode());
-        registration.setIsDeleted((short) 0);
+        registration.setIsDeleted(CommonConstants.NORMAL);
         registration.setQueueNo(generateQueueNo(department.getMainId()));
         registration.setAppointmentTime(LocalDateTime.now());
 

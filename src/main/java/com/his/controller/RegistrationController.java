@@ -96,7 +96,7 @@ public class RegistrationController {
     @PreAuthorize("hasAnyRole('NURSE', 'DOCTOR', 'CASHIER', 'ADMIN')")
     public Result<RegistrationVO> getById(
             @Parameter(description = "挂号记录ID", required = true, example = "1")
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
         try {
             log.info("查询挂号记录，ID: {}", id);
             RegistrationVO vo = registrationService.getById(id);
@@ -122,9 +122,9 @@ public class RegistrationController {
     @PreAuthorize("hasAnyRole('NURSE', 'CASHIER', 'ADMIN')")
     public Result<Void> cancel(
             @Parameter(description = "挂号记录ID", required = true, example = "1")
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(description = "取消原因", example = "患者临时有事")
-            @RequestParam(required = false) String reason) {
+            @RequestParam(value = "reason", required = false) String reason) {
         try {
             log.info("取消挂号，ID: {}, 原因: {}", id, reason);
             registrationService.cancel(id, reason);
@@ -155,7 +155,7 @@ public class RegistrationController {
     )
     public Result<Void> refund(
             @Parameter(description = "挂号记录ID", required = true, example = "1")
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
         try {
             LogUtils.logSensitiveOperation("挂号退费", "挂号记录", id);
             registrationService.refund(id);

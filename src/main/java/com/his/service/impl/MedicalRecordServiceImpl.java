@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.his.dto.MedicalRecordDTO;
 import com.his.entity.MedicalRecord;
 import com.his.entity.Registration;
+import com.his.enums.MedicalRecordStatusEnum;
+import com.his.common.CommonConstants;
 import com.his.repository.MedicalRecordRepository;
 import com.his.repository.RegistrationRepository;
 
@@ -135,7 +137,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         Registration registration = registrationRepository.findById(dto.getRegistrationId())
                 .orElseThrow(() -> new IllegalArgumentException("挂号单不存在，ID: " + dto.getRegistrationId()));
 
-        if (registration.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(registration.getIsDeleted())) {
             throw new IllegalArgumentException("挂号单已被删除");
         }
 
@@ -150,12 +152,12 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
 
         // 3. 检查是否已存在病历
         MedicalRecord medicalRecord = medicalRecordRepository
-                .findByRegistration_MainIdAndIsDeleted(dto.getRegistrationId(), (short) 0)
+                .findByRegistration_MainIdAndIsDeleted(dto.getRegistrationId(), CommonConstants.NORMAL)
                 .orElse(null);
 
         if (medicalRecord != null) {
             // 业务校验：已提交或已审核的病历不允许再修改，必须维持医疗记录的严肃性
-            if (medicalRecord.getStatus() != 0) {
+            if (!MedicalRecordStatusEnum.DRAFT.getCode().equals(medicalRecord.getStatus())) {
                 log.warn("保存/更新病历被拒绝：病历已提交或已审核，ID: {}, 当前状态: {}",
                         medicalRecord.getMainId(), medicalRecord.getStatus());
                 throw new IllegalStateException("已提交或已审核的病历不允许修改");
@@ -212,7 +214,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         MedicalRecord record = medicalRecordRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("病历不存在，ID: " + id));
 
-        if (record.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(record.getIsDeleted())) {
             throw new IllegalArgumentException("病历已被删除，ID: " + id);
         }
 
@@ -254,7 +256,7 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         }
 
         MedicalRecord record = medicalRecordRepository
-                .findByRegistration_MainIdAndIsDeleted(registrationId, (short) 0)
+                .findByRegistration_MainIdAndIsDeleted(registrationId, CommonConstants.NORMAL)
                 .orElse(null);
 
         // 初始化懒加载字段
@@ -307,16 +309,16 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         MedicalRecord record = getById(id);
 
         // 幂等处理：如果病历已经提交，则直接返回成功，避免重复点击报错
-        if (record.getStatus() == 1) {
+        if (MedicalRecordStatusEnum.SUBMITTED.getCode().equals(record.getStatus())) {
             log.info("病历已处于提交状态，无需重复操作，ID: {}", id);
             return;
         }
 
-        if (record.getStatus() != 0) {
+        if (!MedicalRecordStatusEnum.DRAFT.getCode().equals(record.getStatus())) {
             throw new IllegalStateException("只有草稿状态的病历才能提交");
         }
 
-        record.setStatus((short) 1);
+        record.setStatus(MedicalRecordStatusEnum.SUBMITTED.getCode());
         record.setUpdatedAt(LocalDateTime.now());
         medicalRecordRepository.save(record);
 
@@ -342,8 +344,8 @@ public class MedicalRecordServiceImpl implements com.his.service.MedicalRecordSe
         setMedicalRecordContent(record, dto);
 
         // 设置状态
-        record.setStatus(dto.getStatus() != null ? dto.getStatus() : (short) 0);
-        record.setIsDeleted((short) 0);
+        record.setStatus(dto.getStatus() != null ? dto.getStatus() : MedicalRecordStatusEnum.DRAFT.getCode());
+        record.setIsDeleted(CommonConstants.NORMAL);
 
         // 时间字段将由@PrePersist自动设置，不需要手动设置
 

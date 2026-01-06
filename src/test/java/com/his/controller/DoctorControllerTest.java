@@ -362,7 +362,7 @@ class DoctorControllerTest extends BaseControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value(containsString("只有[待就诊]状态的挂号才能接诊")));
+                .andExpect(jsonPath("$.message").value(containsString("状态转换失败")));
     }
 
     @Test

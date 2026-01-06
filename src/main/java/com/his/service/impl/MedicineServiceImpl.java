@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.his.common.CommonConstants;
 import com.his.dto.InventoryStatsVO;
 import com.his.entity.Medicine;
 import com.his.repository.MedicineRepository;
@@ -119,7 +120,7 @@ public class MedicineServiceImpl implements MedicineService {
         Medicine medicine = medicineRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("药品不存在，ID: " + id));
 
-        if (medicine.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(medicine.getIsDeleted())) {
             throw new IllegalArgumentException("药品已被删除，ID: " + id);
         }
 

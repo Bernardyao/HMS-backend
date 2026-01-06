@@ -19,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.his.dto.CreateChargeDTO;
 import com.his.dto.PaymentDTO;
+import com.his.common.CommonConstants;
 import com.his.entity.*;
 import com.his.enums.ChargeStatusEnum;
+import com.his.enums.ChargeTypeEnum;
 import com.his.enums.PrescriptionStatusEnum;
 import com.his.enums.RegStatusEnum;
 import com.his.monitoring.SequenceGenerationMetrics;
@@ -156,7 +158,7 @@ public class ChargeServiceImpl implements ChargeService {
         Registration registration = registrationRepository.findById(dto.getRegistrationId())
                 .orElseThrow(() -> new IllegalArgumentException("挂号单不存在，ID: " + dto.getRegistrationId()));
 
-        if (registration.getIsDeleted() == 1) {
+        if (CommonConstants.DELETED.equals(registration.getIsDeleted())) {
             throw new IllegalArgumentException("挂号单已被删除");
         }
 
@@ -245,16 +247,16 @@ public class ChargeServiceImpl implements ChargeService {
         charge.setChargeNo(generateChargeNo());
         // 【改造】区分收费类型：1=仅挂号费, 2=仅处方费, 3=混合收费（向后兼容）
         if (isPrescriptionCharge && includeRegistrationFee) {
-            charge.setChargeType((short) 3); // 混合收费（挂号费+处方费）
+            charge.setChargeType(ChargeTypeEnum.MIXED.getCode()); // 混合收费（挂号费+处方费）
         } else if (isPrescriptionCharge) {
-            charge.setChargeType((short) 2); // 仅处方费
+            charge.setChargeType(ChargeTypeEnum.PRESCRIPTION_ONLY.getCode()); // 仅处方费
         } else {
-            charge.setChargeType((short) 1); // 仅挂号费
+            charge.setChargeType(ChargeTypeEnum.REGISTRATION_ONLY.getCode()); // 仅挂号费
         }
         charge.setTotalAmount(totalAmount);
         charge.setActualAmount(totalAmount);
         charge.setStatus(ChargeStatusEnum.UNPAID.getCode());
-        charge.setIsDeleted((short) 0);
+        charge.setIsDeleted(CommonConstants.NORMAL);
 
         Charge savedCharge = chargeRepository.save(charge);
 
@@ -552,7 +554,7 @@ public class ChargeServiceImpl implements ChargeService {
     public Page<ChargeVO> queryCharges(String chargeNo, Long patientId, Integer status, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         Specification<Charge> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("isDeleted"), (short) 0));
+            predicates.add(cb.equal(root.get("isDeleted"), CommonConstants.NORMAL));
 
             if (chargeNo != null && !chargeNo.isEmpty()) {
                 predicates.add(cb.equal(root.get("chargeNo"), chargeNo));
@@ -864,19 +866,19 @@ public class ChargeServiceImpl implements ChargeService {
     @Transactional(readOnly = true)
     public Map<String, List<ChargeVO>> getChargesByType(Long registrationId) {
         List<Charge> charges = chargeRepository.findByRegistrationIdWithDetailsOrderByCreatedAtDesc(
-                registrationId, (short) 0);
+                registrationId, CommonConstants.NORMAL);
 
         Map<String, List<ChargeVO>> result = new HashMap<>();
         result.put("registration", charges.stream()
-                .filter(c -> c.getChargeType() == 1)
+                .filter(c -> ChargeTypeEnum.REGISTRATION_ONLY.getCode().equals(c.getChargeType()))
                 .map(this::mapToVO)
                 .collect(Collectors.toList()));
         result.put("prescription", charges.stream()
-                .filter(c -> c.getChargeType() == 2)
+                .filter(c -> ChargeTypeEnum.PRESCRIPTION_ONLY.getCode().equals(c.getChargeType()))
                 .map(this::mapToVO)
                 .collect(Collectors.toList()));
         result.put("combined", charges.stream()
-                .filter(c -> c.getChargeType() == 3)
+                .filter(c -> ChargeTypeEnum.MIXED.getCode().equals(c.getChargeType()))
                 .map(this::mapToVO)
                 .collect(Collectors.toList()));
 

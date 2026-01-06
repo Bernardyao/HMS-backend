@@ -125,7 +125,7 @@ public class NurseWorkstationController {
     )
     public Result<List<PatientSearchVO>> searchPatients(
             @Parameter(description = "搜索关键字（姓名、身份证号或手机号）", required = true, example = "张三")
-            @RequestParam String keyword
+            @RequestParam("keyword") String keyword
     ) {
         try {
             log.info("护士搜索患者，关键字: [{}]", keyword);
@@ -188,7 +188,7 @@ public class NurseWorkstationController {
     )
     public Result<ChargeVO> payRegistrationFee(
             @Parameter(description = "挂号单ID", required = true, example = "1")
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(description = "支付信息", required = true)
             @RequestBody PaymentDTO paymentDTO
     ) {

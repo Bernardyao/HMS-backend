@@ -102,10 +102,10 @@ public class PharmacistPrescriptionController {
     public Result<Void> review(
             @Parameter(description = "处方ID", required = true, example = "1")
             @PathVariable("id") Long id,
-            @Parameter(description = "审核医生ID", required = true, example = "1")
-            @RequestParam("reviewDoctorId") Long reviewDoctorId,
+            @Parameter(description = "审核医生ID", required = false, example = "1")
+            @RequestParam(name = "reviewDoctorId", required = false) Long reviewDoctorId,
             @Parameter(description = "审核备注", example = "处方合理，准予发药")
-            @RequestParam(value = "remark", required = false) String remark) {
+            @RequestParam(name = "remark", required = false) String remark) {
 
         log.info("【药师】审核处方 - ID: {}, 审核医生ID: {}", id, reviewDoctorId);
         prescriptionService.review(id, reviewDoctorId, remark);
@@ -130,7 +130,7 @@ public class PharmacistPrescriptionController {
     )
     public Result<String> dispense(
             @Parameter(description = "处方ID", required = true, example = "1")
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
 
         log.info("【药师】发药 - 处方ID: {}", id);
 
@@ -159,9 +159,9 @@ public class PharmacistPrescriptionController {
     )
     public Result<String> returnMedicine(
             @Parameter(description = "处方ID", required = true, example = "1")
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Parameter(description = "退药原因", required = true, example = "患者要求退药")
-            @RequestParam String reason) {
+            @RequestParam("reason") String reason) {
 
         log.info("【药师】退药 - 处方ID: {}, 原因: {}", id, reason);
         prescriptionService.returnMedicine(id, reason);
