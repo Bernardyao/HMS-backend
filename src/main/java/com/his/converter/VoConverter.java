@@ -2,10 +2,12 @@ package com.his.converter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 import com.his.entity.MedicalRecord;
 import com.his.entity.Medicine;
 import com.his.entity.Prescription;
+import com.his.entity.PrescriptionDetail;
 import com.his.entity.Registration;
 import com.his.enums.RegStatusEnum;
 import com.his.vo.MedicalRecordVO;
@@ -149,7 +151,50 @@ public class VoConverter {
             .dispenseBy(prescription.getDispenseBy())
             .createdAt(prescription.getCreatedAt())
             .updatedAt(prescription.getUpdatedAt())
+            .details(toPrescriptionDetailVOList(prescription.getDetails()))
             .build();
+    }
+
+    /**
+     * 处方明细实体转PrescriptionDetailVO
+     *
+     * @param detail 处方明细实体
+     * @return PrescriptionDetailVO
+     */
+    private static PrescriptionVO.PrescriptionDetailVO toPrescriptionDetailVO(PrescriptionDetail detail) {
+        if (detail == null) {
+            return null;
+        }
+
+        return PrescriptionVO.PrescriptionDetailVO.builder()
+            .mainId(detail.getMainId())
+            .medicineId(detail.getMedicine() != null ? detail.getMedicine().getMainId() : null)
+            .medicineName(detail.getMedicineName())
+            .unitPrice(detail.getUnitPrice())
+            .quantity(detail.getQuantity())
+            .subtotal(detail.getSubtotal())
+            .frequency(detail.getFrequency())
+            .dosage(detail.getDosage())
+            .route(detail.getRoute())
+            .days(detail.getDays())
+            .instructions(detail.getInstructions())
+            .build();
+    }
+
+    /**
+     * 处方明细实体列表转PrescriptionDetailVO列表
+     *
+     * @param details 处方明细实体列表
+     * @return PrescriptionDetailVO列表
+     */
+    private static List<PrescriptionVO.PrescriptionDetailVO> toPrescriptionDetailVOList(List<PrescriptionDetail> details) {
+        if (details == null || details.isEmpty()) {
+            return null;
+        }
+
+        return details.stream()
+            .map(VoConverter::toPrescriptionDetailVO)
+            .collect(java.util.stream.Collectors.toList());
     }
 
     /**
