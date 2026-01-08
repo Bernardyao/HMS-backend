@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>处方操作接口保留在各工作站控制器中，保持业务职责清晰：</p>
  * <ul>
  *   <li>医生操作：<code>POST /api/doctor/prescriptions</code>（创建处方）</li>
- *   <li>医生操作：<code>POST /api/doctor/prescriptions/{id}/review</code>（审核处方）</li>
+ *   <li>药师操作：<code>POST /api/pharmacist/prescriptions/{id}/review</code>（审核处方）</li>
  *   <li>药师操作：<code>GET /api/pharmacist/prescriptions/pending</code>（待发药列表）</li>
  *   <li>药师操作：<code>POST /api/pharmacist/prescriptions/{id}/dispense</code>（发药）</li>
  *   <li>药师操作：<code>POST /api/pharmacist/prescriptions/{id}/return</code>（退药）</li>

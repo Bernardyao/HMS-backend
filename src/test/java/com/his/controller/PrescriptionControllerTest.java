@@ -17,8 +17,6 @@ import com.his.service.PrescriptionService;
 import com.his.test.base.BaseControllerTest;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,10 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 测试范围：
  * <ul>
  *   <li>创建处方（POST /api/doctor/prescriptions/create）</li>
- *   <li>审核处方（POST /api/doctor/prescriptions/{id}/review）</li>
  * </ul>
  *
  * <p>注意：查询功能已移至 {@link com.his.controller.CommonPrescriptionController}</p>
+ * <p>注意：审核处方功能已移至药师模块（POST /api/pharmacist/prescriptions/{id}/review）</p>
  * <p>覆盖率目标: 75%+
  *
  * @author HIS开发团队
@@ -196,91 +194,6 @@ class PrescriptionControllerTest extends BaseControllerTest {
                         .content(toJson(dto)))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500));
-    }
-
-    // ==================== POST /{id}/review - 审核处方测试 ====================
-
-    @Test
-    @DisplayName("审核处方 - PHARMACIST角色成功")
-    @WithMockUser(roles = "PHARMACIST")
-    void testReviewPrescription_Pharmacist_Success() throws Exception {
-        // Given: void method, no need to mock for success case
-        // When & Then
-        mockMvc.perform(post("/api/doctor/prescriptions/1/review")
-                        .param("reviewDoctorId", "10")
-                        .param("remark", "处方合理，准予发药"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("审核成功"));
-    }
-
-    @Test
-    @DisplayName("审核处方 - ADMIN角色成功")
-    @WithMockUser(roles = "ADMIN")
-    void testReviewPrescription_Admin_Success() throws Exception {
-        // When & Then
-        mockMvc.perform(post("/api/doctor/prescriptions/1/review")
-                        .param("reviewDoctorId", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    @DisplayName("审核处方 - 已审核过")
-    @WithMockUser(roles = "PHARMACIST")
-    void testReviewPrescription_AlreadyReviewed() throws Exception {
-        // Given: 处方已审核
-        doThrow(new IllegalStateException("处方已审核，无法重复审核"))
-                .when(prescriptionService).review(eq(1L), eq(10L), any());
-
-        // When & Then: GlobalExceptionHandler返回HTTP 400
-        mockMvc.perform(post("/api/doctor/prescriptions/1/review")
-                        .param("reviewDoctorId", "10"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("处方已审核，无法重复审核"));
-    }
-
-    @Test
-    @DisplayName("审核处方 - 处方不存在")
-    @WithMockUser(roles = "PHARMACIST")
-    void testReviewPrescription_NotFound() throws Exception {
-        // Given: 处方不存在
-        doThrow(new IllegalArgumentException("处方不存在"))
-                .when(prescriptionService).review(eq(999L), eq(10L), any());
-
-        // When & Then: GlobalExceptionHandler返回HTTP 400
-        mockMvc.perform(post("/api/doctor/prescriptions/999/review")
-                        .param("reviewDoctorId", "10"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("处方不存在"));
-    }
-
-    @Test
-    @DisplayName("审核处方 - 无效ID")
-    @WithMockUser(roles = "PHARMACIST")
-    void testReviewPrescription_InvalidId() throws Exception {
-        // Given: 无效ID
-        doThrow(new IllegalArgumentException("无效的处方ID"))
-                .when(prescriptionService).review(eq(0L), eq(10L), any());
-
-        // When & Then: GlobalExceptionHandler返回HTTP 400
-        mockMvc.perform(post("/api/doctor/prescriptions/0/review")
-                        .param("reviewDoctorId", "10"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400));
-    }
-
-    @Test
-    @DisplayName("审核处方 - DOCTOR角色无权限")
-    @WithMockUser(roles = "DOCTOR")
-    void testReviewPrescription_AccessDenied() throws Exception {
-        // Given: DOCTOR角色尝试审核
-        // When & Then: 应返回403
-        mockMvc.perform(post("/api/doctor/prescriptions/1/review")
-                        .param("reviewDoctorId", "10"))
-                .andExpect(status().isForbidden());
     }
 
     // ==================== 权限和异常测试 ====================

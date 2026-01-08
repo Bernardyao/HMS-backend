@@ -347,6 +347,30 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     /**
+     * 查询待审核处方列表
+     *
+     * <p>查询所有状态为 ISSUED（已开方）的处方</p>
+     *
+     * <p><b>使用场景：</b></p>
+     * <ul>
+     *   <li>药师工作站：获取待审核处方列表</li>
+     * </ul>
+     *
+     * @return 待审核处方列表
+     * @since 1.0
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Prescription> getPendingReviewList() {
+        log.info("查询待审核处方列表");
+        // Repository已有方法直接调用，查询状态为已开方(1)的处方
+        List<Prescription> prescriptions = prescriptionRepository.findPendingReview();
+        // 初始化懒加载字段，避免LazyInitializationException
+        prescriptions.forEach(this::initializeLazyFields);
+        return prescriptions;
+    }
+
+    /**
      * 发药
      *
      * <p>药师根据已缴费处方发放药品并扣减库存</p>

@@ -13,7 +13,6 @@ import com.his.service.PrescriptionService;
 import com.his.vo.PrescriptionVO;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.RequiredArgsConstructor;
@@ -22,12 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 处方管理控制器（医生工作站）
  *
- * <p>负责处方的创建、审核等操作</p>
+ * <p>负责处方的创建等操作</p>
  *
  * <h3>主要功能</h3>
  * <ul>
  *   <li><b>创建处方</b>：医生根据挂号单开具处方</li>
- *   <li><b>审核处方</b>：药师对处方进行审核</li>
  * </ul>
  *
  * <h3>重要说明</h3>
@@ -84,31 +82,5 @@ public class PrescriptionController {
         PrescriptionVO vo = VoConverter.toPrescriptionVO(prescription);
 
         return Result.success("处方创建成功", vo);
-    }
-
-    /**
-     * 审核处方
-     * <p>对已开方的处方进行审核（仅药师和管理员）</p>
-     *
-     * @param id 处方ID
-     * @param reviewDoctorId 审核医生ID
-     * @param remark 审核备注
-     * @return 操作结果
-     */
-    @Operation(summary = "审核处方", description = "对已开方的处方进行审核（仅药师和管理员）")
-    @PreAuthorize("hasAnyRole('PHARMACIST', 'ADMIN')")  // 覆盖类级别权限，只允许药师和管理员审核
-    @PostMapping("/{id}/review")
-    public Result<Void> review(
-            @Parameter(description = "处方ID", required = true, example = "1")
-            @PathVariable("id") Long id,
-            @Parameter(description = "审核医生ID", required = false, example = "1")
-            @RequestParam(name = "reviewDoctorId", required = false) Long reviewDoctorId,
-            @Parameter(description = "审核备注", example = "处方合理，准予发药")
-            @RequestParam(name = "remark", required = false) String remark) {
-
-        log.info("【医生】审核处方 - ID: {}, 审核医生ID: {}", id, reviewDoctorId);
-        prescriptionService.review(id, reviewDoctorId, remark);
-
-        return Result.success("审核成功", null);
     }
 }

@@ -55,6 +55,14 @@ public interface PrescriptionService {
     java.util.List<Prescription> getPendingDispenseList();
 
     /**
+     * 获取待审核处方列表
+     * 状态为ISSUED（已开方）的处方，等待药师审核
+     *
+     * @return 待审核处方列表
+     */
+    java.util.List<Prescription> getPendingReviewList();
+
+    /**
      * 发药
      * 1. 检查状态是否为已审核
      * 2. 更新状态为已发药(status=3)

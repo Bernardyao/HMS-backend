@@ -89,6 +89,28 @@ public class PharmacistPrescriptionController {
     }
 
     /**
+     * 待审核处方列表
+     * <p>查询所有已开方但未审核的处方列表，用于药师工作站的待审核队列</p>
+     *
+     * @return 待审核的处方列表
+     */
+    @Operation(summary = "待审核处方列表", description = "查询所有已开方但未审核的处方列表")
+    @GetMapping("/pending-review")
+    public Result<List<PrescriptionVO>> getPendingReviewList() {
+        log.info("【药师】查询待审核处方列表");
+
+        List<Prescription> prescriptions = prescriptionService.getPendingReviewList();
+        List<PrescriptionVO> vos = prescriptions.stream()
+                .map(VoConverter::toPrescriptionVO)
+                .collect(java.util.stream.Collectors.toList());
+
+        return Result.success(
+            String.format("查询成功，共 %d 张待审核处方", vos.size()),
+            vos
+        );
+    }
+
+    /**
      * 审核处方
      * <p>对已开方的处方进行审核，审核通过后才能进行收费和发药</p>
      *

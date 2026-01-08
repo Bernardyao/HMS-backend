@@ -154,7 +154,7 @@ class DoctorServiceImplStatusTest extends BaseServiceTest {
 
         // When & Then - 按照幂等性逻辑，不应再抛出异常，而是直接返回成功
         doctorService.updateStatus(regId, RegStatusEnum.WAITING);
-        
+
         // 验证状态未变化
         assertEquals(RegStatusEnum.WAITING.getCode(), registration.getStatus());
     }
