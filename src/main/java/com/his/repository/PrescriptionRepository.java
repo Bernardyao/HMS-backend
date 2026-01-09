@@ -80,25 +80,9 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
 
     /**
      * 根据ID查询处方（包含明细）
-     * 使用 JOIN FETCH 避免 N+1 查询问题
-     *
-     * <p><b>注意：</b>此方法目前未在业务代码中使用，保留用于：
-     * <ul>
-     *   <li>未来可能的性能优化场景</li>
-     *   <li>查询优化参考</li>
-     *   <li>调试和分析工具</li>
-     * </ul>
-     *
-     * <p>当前实现使用 {@code PrescriptionDetailRepository} 直接查询明细列表，
-     * 在事务环境中更加可靠，避免了 Hibernate 懒加载的潜在问题。</p>
-     *
-     * <p><b>TODO:</b> 考虑性能基准测试，比较以下两种方案：
-     * <ul>
-     *   <li>单次 JOIN FETCH 查询（此方法）</li>
-     *   <li>两次独立查询（当前实现）</li>
-     * </ul>
+     * 使用 JOIN FETCH 避免 N+1 查询问题，同时加载患者信息确保一致性
      */
-    @Query("SELECT p FROM Prescription p LEFT JOIN FETCH p.details WHERE p.mainId = :mainId AND p.isDeleted = 0")
+    @Query("SELECT p FROM Prescription p LEFT JOIN FETCH p.patient LEFT JOIN FETCH p.details WHERE p.mainId = :mainId AND p.isDeleted = 0")
     Optional<Prescription> findByIdWithDetails(@Param("mainId") Long mainId);
 
     /**

@@ -23,6 +23,7 @@ import com.his.repository.DoctorRepository;
 import com.his.repository.PatientRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.ChargeService;
+import com.his.service.RegistrationStateMachine;
 import com.his.test.base.BaseServiceTest;
 import com.his.testutils.TestDataBuilders;
 import com.his.vo.ChargeVO;
@@ -52,6 +53,8 @@ class RegistrationServiceImplTest extends BaseServiceTest {
     private ChargeRepository chargeRepository;
     @Mock
     private ChargeService chargeService;
+    @Mock
+    private RegistrationStateMachine registrationStateMachine;
 
     @InjectMocks
     private RegistrationServiceImpl registrationService;
@@ -433,7 +436,7 @@ class RegistrationServiceImplTest extends BaseServiceTest {
 
     @Test
     @DisplayName("测试取消挂号：成功场景（未支付挂号费）")
-    void cancel_Success_Unpaid() {
+    void cancel_Success_Unpaid() throws Exception {
         // Given
         Long registrationId = 1000L;
         String reason = "患者临时有事";
@@ -444,6 +447,26 @@ class RegistrationServiceImplTest extends BaseServiceTest {
 
         when(registrationRepository.findById(registrationId)).thenReturn(Optional.of(registration));
         when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 【关键修复】Mock状态机：WAITING -> CANCELLED
+        // 模拟状态机内部更新registration对象
+        doAnswer(inv -> {
+            inv.getArgument(0); // id - 未使用
+            RegStatusEnum fromStatus = inv.getArgument(1);
+            RegStatusEnum toStatus = inv.getArgument(2);
+
+            // 验证状态转换
+            if (RegStatusEnum.WAITING.equals(fromStatus) && RegStatusEnum.CANCELLED.equals(toStatus)) {
+                // 模拟状态机更新对象（但不保存，因为cancel方法会手动保存）
+                registration.setStatus(RegStatusEnum.CANCELLED.getCode());
+                return registration;
+            }
+            return registration;
+        }).when(registrationStateMachine).transition(
+                eq(registrationId),
+                eq(RegStatusEnum.WAITING),
+                eq(RegStatusEnum.CANCELLED),
+                any(), anyString(), anyString());
 
         // When
         registrationService.cancel(registrationId, reason);
@@ -458,7 +481,7 @@ class RegistrationServiceImplTest extends BaseServiceTest {
 
     @Test
     @DisplayName("测试取消挂号：成功场景（已支付，自动退费）")
-    void cancel_Success_PaidWithAutoRefund() {
+    void cancel_Success_PaidWithAutoRefund() throws Exception {
         // Given
         Long registrationId = 1000L;
         Long chargeId = 500L;
@@ -478,6 +501,25 @@ class RegistrationServiceImplTest extends BaseServiceTest {
         when(chargeRepository.findByRegistration_MainIdAndIsDeleted(registrationId, (short) 0))
                 .thenReturn(java.util.List.of(registrationCharge));
         when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 【关键修复】Mock状态机：PAID_REGISTRATION -> CANCELLED
+        doAnswer(inv -> {
+            inv.getArgument(0); // id - 未使用
+            RegStatusEnum fromStatus = inv.getArgument(1);
+            RegStatusEnum toStatus = inv.getArgument(2);
+
+            // 验证状态转换
+            if (RegStatusEnum.PAID_REGISTRATION.equals(fromStatus) && RegStatusEnum.CANCELLED.equals(toStatus)) {
+                // 模拟状态机更新对象（但不保存，因为cancel方法会手动保存）
+                registration.setStatus(RegStatusEnum.CANCELLED.getCode());
+                return registration;
+            }
+            return registration;
+        }).when(registrationStateMachine).transition(
+                eq(registrationId),
+                eq(RegStatusEnum.PAID_REGISTRATION),
+                eq(RegStatusEnum.CANCELLED),
+                any(), anyString(), anyString());
 
         // When
         registrationService.cancel(registrationId, reason);
@@ -606,7 +648,7 @@ class RegistrationServiceImplTest extends BaseServiceTest {
 
     @Test
     @DisplayName("测试退费：成功场景")
-    void refund_Success() {
+    void refund_Success() throws Exception {
         // Given
         Long registrationId = 1000L;
 
@@ -616,6 +658,27 @@ class RegistrationServiceImplTest extends BaseServiceTest {
 
         when(registrationRepository.findById(registrationId)).thenReturn(Optional.of(registration));
         when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 【关键修复】Mock状态机：CANCELLED -> REFUNDED
+        // 模拟状态机内部更新registration对象（状态机负责保存）
+        doAnswer(inv -> {
+            inv.getArgument(0); // id - 未使用
+            RegStatusEnum fromStatus = inv.getArgument(1);
+            RegStatusEnum toStatus = inv.getArgument(2);
+
+            // 验证状态转换
+            if (RegStatusEnum.CANCELLED.equals(fromStatus) && RegStatusEnum.REFUNDED.equals(toStatus)) {
+                // 模拟状态机更新对象并保存
+                registration.setStatus(RegStatusEnum.REFUNDED.getCode());
+                registrationRepository.save(registration);
+                return registration;
+            }
+            return registration;
+        }).when(registrationStateMachine).transition(
+                eq(registrationId),
+                eq(RegStatusEnum.CANCELLED),
+                eq(RegStatusEnum.REFUNDED),
+                any(), anyString(), anyString());
 
         // When
         registrationService.refund(registrationId);

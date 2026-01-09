@@ -29,6 +29,7 @@ import com.his.monitoring.SequenceGenerationMetrics;
 import com.his.repository.*;
 import com.his.service.ChargeService;
 import com.his.service.PrescriptionService;
+import com.his.service.PrescriptionStateMachine;
 import com.his.service.RegistrationStateMachine;
 import com.his.vo.ChargeVO;
 import com.his.vo.DailySettlementVO;
@@ -99,6 +100,7 @@ public class ChargeServiceImpl implements ChargeService {
     private final RegistrationRepository registrationRepository;
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionService prescriptionService;
+    private final PrescriptionStateMachine prescriptionStateMachine;
     private final RegistrationStateMachine registrationStateMachine;
 
     // 监控指标
@@ -389,7 +391,7 @@ public class ChargeServiceImpl implements ChargeService {
                 if ("REGISTRATION".equals(detail.getItemType())) {
                     // 【重构】使用状态机更新挂号状态为 PAID_REGISTRATION，确保审计日志
                     Registration registration = charge.getRegistration();
-                    if (registration != null && RegStatusEnum.WAITING.getCode().equals(registration.getStatus())) {
+                    if (registration != null) {
                         try {
                             // 尝试从安全上下文获取当前操作人信息，如果失败则使用系统默认
                             Long operatorId = null;
@@ -401,15 +403,29 @@ public class ChargeServiceImpl implements ChargeService {
                                 log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", se.getMessage());
                             }
 
-                            registrationStateMachine.transition(
-                                registration.getMainId(),
-                                RegStatusEnum.WAITING,
-                                RegStatusEnum.PAID_REGISTRATION,
-                                operatorId,
-                                operatorName,
-                                "支付挂号费"
-                            );
-                            log.info("挂号状态已更新为已缴挂号费，挂号ID: {}", registration.getMainId());
+                            // 【修复】检查当前状态，避免重复更新或状态不匹配
+                            RegStatusEnum currentStatus = RegStatusEnum.fromCode(registration.getStatus());
+
+                            // 只有当前状态是WAITING或已经是PAID_REGISTRATION时才处理
+                            if (RegStatusEnum.WAITING.equals(currentStatus)) {
+                                // WAITING → PAID_REGISTRATION：首次支付挂号费
+                                registrationStateMachine.transition(
+                                    registration.getMainId(),
+                                    RegStatusEnum.WAITING,
+                                    RegStatusEnum.PAID_REGISTRATION,
+                                    operatorId,
+                                    operatorName,
+                                    "支付挂号费"
+                                );
+                                log.info("挂号状态已更新为已缴挂号费，挂号ID: {}", registration.getMainId());
+                            } else if (RegStatusEnum.PAID_REGISTRATION.equals(currentStatus)) {
+                                // 已经是PAID_REGISTRATION：可能是重复支付或混合收费，直接记录日志
+                                log.info("挂号状态已是已缴挂号费，跳过状态更新，挂号ID: {}", registration.getMainId());
+                            } else {
+                                // 其他状态：可能是异常情况，记录警告
+                                log.warn("挂号状态异常，当前状态: {}, 挂号ID: {}",
+                                    currentStatus.getDescription(), registration.getMainId());
+                            }
                         } catch (Exception e) {
                             log.error("更新挂号状态失败，挂号ID: {}", registration.getMainId(), e);
                             throw new RuntimeException("更新挂号状态失败: " + e.getMessage(), e);
@@ -420,9 +436,33 @@ public class ChargeServiceImpl implements ChargeService {
                             .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + detail.getItemId()));
 
                     if (PrescriptionStatusEnum.REVIEWED.getCode().equals(prescription.getStatus())) {
-                         prescription.setStatus(PrescriptionStatusEnum.PAID.getCode());
-                         prescription.setUpdatedAt(LocalDateTime.now());
-                         prescriptionRepository.save(prescription);
+                        // 【修复】使用状态机更新状态为PAID
+                        try {
+                            // 获取操作人信息
+                            Long operatorId = null;
+                            String operatorName = "SYSTEM";
+                            try {
+                                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+                            } catch (Exception e) {
+                                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+                            }
+
+                            // 调用状态机转换状态：REVIEWED → PAID
+                            prescriptionStateMachine.transition(
+                                prescription.getMainId(),
+                                PrescriptionStatusEnum.REVIEWED,
+                                PrescriptionStatusEnum.PAID,
+                                operatorId,
+                                operatorName,
+                                "患者缴费"
+                            );
+
+                            log.info("处方状态已更新为已缴费，处方ID: {}", prescription.getMainId());
+                        } catch (Exception e) {
+                            log.error("处方状态机转换失败，处方ID: {}", prescription.getMainId(), e);
+                            throw new IllegalStateException("处方缴费失败：" + e.getMessage());
+                        }
                     }
                 }
             }
@@ -499,14 +539,64 @@ public class ChargeServiceImpl implements ChargeService {
                             .orElseThrow(() -> new IllegalArgumentException("处方不存在，ID: " + detail.getItemId()));
 
                     if (PrescriptionStatusEnum.PAID.getCode().equals(prescription.getStatus())) {
-                        prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode());
-                        prescription.setUpdatedAt(LocalDateTime.now());
-                        prescriptionRepository.save(prescription);
+                        // 【修复】使用状态机更新状态为REVIEWED
+                        try {
+                            // 获取操作人信息
+                            Long operatorId = null;
+                            String operatorName = "SYSTEM";
+                            try {
+                                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+                            } catch (Exception e) {
+                                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+                            }
+
+                            // 调用状态机转换状态：PAID → REVIEWED
+                            prescriptionStateMachine.transition(
+                                prescription.getMainId(),
+                                PrescriptionStatusEnum.PAID,
+                                PrescriptionStatusEnum.REVIEWED,
+                                operatorId,
+                                operatorName,
+                                "退费: " + refundReason
+                            );
+
+                            log.info("处方状态已回滚为已审核，处方ID: {}", prescription.getMainId());
+                        } catch (Exception e) {
+                            log.error("处方状态机转换失败，处方ID: {}", prescription.getMainId(), e);
+                            throw new IllegalStateException("处方退费失败：" + e.getMessage());
+                        }
                     } else if (PrescriptionStatusEnum.DISPENSED.getCode().equals(prescription.getStatus())) {
-                        prescription.setStatus(PrescriptionStatusEnum.REFUNDED.getCode());
-                        prescription.setUpdatedAt(LocalDateTime.now());
-                        prescriptionRepository.save(prescription);
-                        prescriptionService.restoreInventoryOnly(prescription.getMainId());
+                        // 【修复】使用状态机更新状态为REFUNDED
+                        try {
+                            // 获取操作人信息
+                            Long operatorId = null;
+                            String operatorName = "SYSTEM";
+                            try {
+                                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+                            } catch (Exception e) {
+                                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+                            }
+
+                            // 调用状态机转换状态：DISPENSED → REFUNDED
+                            prescriptionStateMachine.transition(
+                                prescription.getMainId(),
+                                PrescriptionStatusEnum.DISPENSED,
+                                PrescriptionStatusEnum.REFUNDED,
+                                operatorId,
+                                operatorName,
+                                "退药退费: " + refundReason
+                            );
+
+                            // 恢复库存
+                            prescriptionService.restoreInventoryOnly(prescription.getMainId());
+
+                            log.info("处方状态已更新为已退费，处方ID: {}", prescription.getMainId());
+                        } catch (Exception e) {
+                            log.error("处方状态机转换失败，处方ID: {}", prescription.getMainId(), e);
+                            throw new IllegalStateException("处方退费失败：" + e.getMessage());
+                        }
                     }
                 }
             }

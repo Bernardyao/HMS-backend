@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
  * </ul>
  *
  * <h3>角色权限</h3>
- * <p>本控制器所有接口需要CASHIER（收费员）或ADMIN（管理员）角色</p>
+ * <p>本控制器所有接口需要CASHIER（收费员）、PHARMACIST（药师）或ADMIN（管理员）角色</p>
  *
  * <h3>审计日志</h3>
  * <p>所有收费、支付、退费操作都会记录审计日志，便于追踪和审计</p>

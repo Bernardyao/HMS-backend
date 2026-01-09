@@ -16,6 +16,7 @@ import com.his.enums.PrescriptionStatusEnum;
 import com.his.enums.PrescriptionTypeEnum;
 import com.his.repository.*;
 import com.his.service.PrescriptionService;
+import com.his.service.PrescriptionStateMachine;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +76,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final MedicalRecordRepository medicalRecordRepository;
     private final RegistrationRepository registrationRepository;
     private final MedicineRepository medicineRepository;
+    private final PrescriptionStateMachine prescriptionStateMachine;
 
     /**
      * 创建处方
@@ -193,12 +195,41 @@ public class PrescriptionServiceImpl implements PrescriptionService {
 
         prescription.setTotalAmount(totalAmount);
         prescription.setItemCount(itemCount);
-        prescription.setStatus(PrescriptionStatusEnum.ISSUED.getCode()); // 1=已开方
 
-        Prescription savedPrescription = prescriptionRepository.save(prescription);
-        log.info("处方主表保存成功，ID: {}, 处方号: {}, 总金额: {}, 药品数量: {}",
-                savedPrescription.getMainId(), savedPrescription.getPrescriptionNo(),
-                savedPrescription.getTotalAmount(), savedPrescription.getItemCount());
+        // 【修复】使用状态机更新状态为ISSUED
+        Prescription savedPrescription;
+        try {
+            // 获取操作人信息
+            Long operatorId = null;
+            String operatorName = "SYSTEM";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+            }
+
+            // 先保存处方
+            savedPrescription = prescriptionRepository.save(prescription);
+            log.info("处方主表保存成功，ID: {}, 处方号: {}, 总金额: {}, 药品数量: {}",
+                    savedPrescription.getMainId(), savedPrescription.getPrescriptionNo(),
+                    savedPrescription.getTotalAmount(), savedPrescription.getItemCount());
+
+            // 调用状态机转换状态：DRAFT → ISSUED
+            prescriptionStateMachine.transition(
+                savedPrescription.getMainId(),
+                PrescriptionStatusEnum.DRAFT,
+                PrescriptionStatusEnum.ISSUED,
+                operatorId,
+                operatorName,
+                "医生开方"
+            );
+
+            log.info("处方状态已更新为已开方，处方ID: {}", savedPrescription.getMainId());
+        } catch (Exception e) {
+            log.error("状态机转换失败，处方ID: {}", prescription.getMainId(), e);
+            throw new IllegalStateException("开方失败：" + e.getMessage());
+        }
 
         for (PrescriptionDetail detail : details) {
             detail.setPrescription(savedPrescription);
@@ -312,14 +343,39 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             throw new IllegalStateException("只有已开方状态的处方才能审核");
         }
 
-        prescription.setStatus(PrescriptionStatusEnum.REVIEWED.getCode()); // 2=已审核
-        prescription.setReviewTime(LocalDateTime.now());
-        prescription.setReviewRemark(remark);
-        prescription.setUpdatedAt(LocalDateTime.now());
+        // 【修复】使用状态机更新状态为REVIEWED
+        try {
+            // 获取操作人信息
+            Long operatorId = reviewDoctorId;
+            String operatorName = "药师";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用默认值: {}", e.getMessage());
+            }
 
-        prescriptionRepository.save(prescription);
+            // 调用状态机转换状态：ISSUED → REVIEWED
+            prescriptionStateMachine.transition(
+                id,
+                PrescriptionStatusEnum.ISSUED,
+                PrescriptionStatusEnum.REVIEWED,
+                operatorId,
+                operatorName,
+                "药师审核"
+            );
 
-        log.info("处方审核成功，ID: {}", id);
+            // 更新审核相关信息
+            prescription.setReviewTime(LocalDateTime.now());
+            prescription.setReviewRemark(remark);
+            prescription.setUpdatedAt(LocalDateTime.now());
+            prescriptionRepository.save(prescription);
+
+            log.info("处方审核成功，ID: {}", id);
+        } catch (Exception e) {
+            log.error("状态机转换失败，处方ID: {}", id, e);
+            throw new IllegalStateException("处方审核失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -450,13 +506,39 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     medicine.getMainId(), medicine.getName(), detail.getQuantity(), medicine.getStockQuantity());
         }
 
-        prescription.setStatus(PrescriptionStatusEnum.DISPENSED.getCode()); // 3=已发药
-        prescription.setDispenseBy(dispenseBy);
-        prescription.setDispenseTime(LocalDateTime.now());
-        prescription.setUpdatedAt(LocalDateTime.now());
-        prescriptionRepository.save(prescription);
+        // 【修复】使用状态机更新状态为DISPENSED
+        try {
+            // 获取操作人信息
+            Long operatorId = dispenseBy;
+            String operatorName = "药师";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用默认值: {}", e.getMessage());
+            }
 
-        log.info("发药成功，处方ID: {}", id);
+            // 调用状态机转换状态：PAID → DISPENSED
+            prescriptionStateMachine.transition(
+                id,
+                PrescriptionStatusEnum.PAID,
+                PrescriptionStatusEnum.DISPENSED,
+                operatorId,
+                operatorName,
+                "药师发药"
+            );
+
+            // 更新发药相关信息
+            prescription.setDispenseBy(dispenseBy);
+            prescription.setDispenseTime(LocalDateTime.now());
+            prescription.setUpdatedAt(LocalDateTime.now());
+            prescriptionRepository.save(prescription);
+
+            log.info("发药成功，处方ID: {}", id);
+        } catch (Exception e) {
+            log.error("状态机转换失败，处方ID: {}", id, e);
+            throw new IllegalStateException("发药失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -511,13 +593,39 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         // 调用抽取出来的恢复库存逻辑
         restoreInventoryOnly(id);
 
-        prescription.setStatus(PrescriptionStatusEnum.REFUNDED.getCode()); // 4=已退费(退药)
-        prescription.setReturnReason(reason);
-        prescription.setReturnTime(LocalDateTime.now());
-        prescription.setUpdatedAt(LocalDateTime.now());
-        prescriptionRepository.save(prescription);
+        // 【修复】使用状态机更新状态为REFUNDED
+        try {
+            // 获取操作人信息
+            Long operatorId = null;
+            String operatorName = "药师";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用默认值: {}", e.getMessage());
+            }
 
-        log.info("退药成功，处方ID: {}", id);
+            // 调用状态机转换状态：DISPENSED → REFUNDED
+            prescriptionStateMachine.transition(
+                id,
+                PrescriptionStatusEnum.DISPENSED,
+                PrescriptionStatusEnum.REFUNDED,
+                operatorId,
+                operatorName,
+                "退药退费: " + reason
+            );
+
+            // 更新退药相关信息
+            prescription.setReturnReason(reason);
+            prescription.setReturnTime(LocalDateTime.now());
+            prescription.setUpdatedAt(LocalDateTime.now());
+            prescriptionRepository.save(prescription);
+
+            log.info("退药成功，处方ID: {}", id);
+        } catch (Exception e) {
+            log.error("状态机转换失败，处方ID: {}", id, e);
+            throw new IllegalStateException("退药失败：" + e.getMessage());
+        }
     }
 
     /**

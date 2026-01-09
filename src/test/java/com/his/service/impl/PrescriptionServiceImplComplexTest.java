@@ -19,6 +19,7 @@ import com.his.repository.MedicineRepository;
 import com.his.repository.PrescriptionDetailRepository;
 import com.his.repository.PrescriptionRepository;
 import com.his.repository.RegistrationRepository;
+import com.his.service.PrescriptionStateMachine;
 import com.his.test.base.BaseServiceTest;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,6 +53,9 @@ class PrescriptionServiceImplComplexTest extends BaseServiceTest {
 
     @Mock
     private com.his.repository.MedicalRecordRepository medicalRecordRepository;
+
+    @Mock
+    private PrescriptionStateMachine prescriptionStateMachine;
 
     @InjectMocks
     private PrescriptionServiceImpl prescriptionService;

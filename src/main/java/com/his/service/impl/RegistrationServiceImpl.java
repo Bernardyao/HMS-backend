@@ -31,6 +31,7 @@ import com.his.repository.PatientRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.ChargeService;
 import com.his.service.RegistrationService;
+import com.his.service.RegistrationStateMachine;
 import com.his.vo.RegistrationVO;
 
 import lombok.RequiredArgsConstructor;
@@ -99,6 +100,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final DoctorRepository doctorRepository;
     private final ChargeRepository chargeRepository;
     private final ChargeService chargeService;
+    private final RegistrationStateMachine registrationStateMachine;
 
     /**
      * 挂号（老患者查找 + 新患者建档 + 创建挂号单）
@@ -346,11 +348,40 @@ public class RegistrationServiceImpl implements RegistrationService {
             }
         }
 
-        registration.setStatus(RegStatusEnum.CANCELLED.getCode());
-        registration.setCancelReason(reason);
-        registrationRepository.save(registration);
+        // 【修复】使用状态机更新状态为CANCELLED，确保验证和审计日志
+        try {
+            // 获取当前状态
+            RegStatusEnum currentStatus = RegStatusEnum.fromCode(registration.getStatus());
 
-        log.info("挂号已取消，挂号ID: {}, 取消原因: {}", id, reason);
+            // 获取操作人信息
+            Long operatorId = null;
+            String operatorName = "SYSTEM";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+            }
+
+            // 调用状态机转换状态
+            registrationStateMachine.transition(
+                id,
+                currentStatus,
+                RegStatusEnum.CANCELLED,
+                operatorId,
+                operatorName,
+                "取消挂号: " + reason
+            );
+
+            // 记录取消原因
+            registration.setCancelReason(reason);
+            registrationRepository.save(registration);
+
+            log.info("挂号已取消，挂号ID: {}, 取消原因: {}", id, reason);
+        } catch (Exception e) {
+            log.error("状态机转换失败，挂号ID: {}, 目标状态: CANCELLED", id, e);
+            throw new IllegalStateException("取消挂号失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -397,10 +428,33 @@ public class RegistrationServiceImpl implements RegistrationService {
             throw new IllegalStateException("只有已取消状态的挂号才能退费");
         }
 
-        registration.setStatus(RegStatusEnum.REFUNDED.getCode());
-        registrationRepository.save(registration);
+        // 【修复】使用状态机更新状态为REFUNDED，确保验证和审计日志
+        try {
+            // 获取操作人信息
+            Long operatorId = null;
+            String operatorName = "SYSTEM";
+            try {
+                operatorId = com.his.common.SecurityUtils.getCurrentUserId();
+                operatorName = com.his.common.SecurityUtils.getCurrentUsername();
+            } catch (Exception e) {
+                log.warn("无法从安全上下文获取用户信息，使用系统默认值: {}", e.getMessage());
+            }
 
-        log.info("挂号已退费，挂号ID: {}", id);
+            // 调用状态机转换状态：CANCELLED → REFUNDED
+            registrationStateMachine.transition(
+                id,
+                RegStatusEnum.CANCELLED,
+                RegStatusEnum.REFUNDED,
+                operatorId,
+                operatorName,
+                "退费"
+            );
+
+            log.info("挂号已退费，挂号ID: {}", id);
+        } catch (Exception e) {
+            log.error("状态机转换失败，挂号ID: {}, 目标状态: REFUNDED", id, e);
+            throw new IllegalStateException("退费失败：" + e.getMessage());
+        }
     }
 
     // ============================================

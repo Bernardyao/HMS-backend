@@ -8,14 +8,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import com.his.entity.*;
+import com.his.enums.RegStatusEnum;
 import com.his.repository.*;
 import com.his.service.impl.RegistrationServiceImpl;
 import com.his.test.base.BaseIntegrationTest;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -51,9 +53,16 @@ class RefundIntegrationTest extends BaseIntegrationTest {
     @MockBean
     private com.his.service.ChargeService chargeService;
 
+    @MockBean
+    private com.his.service.RegistrationStateMachine registrationStateMachine;
+
+    @Autowired
+    private com.his.service.impl.RegistrationServiceImpl registrationService;
+
     // ==================== 退费场景测试 ====================
 
     @Test
+    @WithMockUser(roles = {"NURSE"})
     @DisplayName("退费：收费单不存在应该抛出异常")
     void refund_ChargeNotFound_ThrowsException() {
         // Given - 创建已缴费的挂号，但没有收费单
@@ -86,7 +95,7 @@ class RefundIntegrationTest extends BaseIntegrationTest {
         // 创建RegistrationServiceImpl实例
         RegistrationServiceImpl registrationService = new RegistrationServiceImpl(
                 patientRepository, registrationRepository, departmentRepository,
-                doctorRepository, chargeRepository, chargeService);
+                doctorRepository, chargeRepository, chargeService, registrationStateMachine);
 
         // When & Then - 应该抛出IllegalStateException
         IllegalStateException exception = assertThrows(IllegalStateException.class,
@@ -103,8 +112,9 @@ class RefundIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = {"NURSE"})
     @DisplayName("退费：待就诊状态可以直接取消（无需退费）")
-    void refund_WaitingStatus_NoRefundNeeded() {
+    void refund_WaitingStatus_NoRefundNeeded() throws Exception {
         // Given - 创建待就诊状态的挂号
         String uniqueSuffix = String.valueOf(TEST_COUNTER.incrementAndGet());
 
@@ -135,9 +145,23 @@ class RefundIntegrationTest extends BaseIntegrationTest {
         // 创建RegistrationServiceImpl实例
         RegistrationServiceImpl registrationService = new RegistrationServiceImpl(
                 patientRepository, registrationRepository, departmentRepository,
-                doctorRepository, chargeRepository, chargeService);
+                doctorRepository, chargeRepository, chargeService, registrationStateMachine);
 
         // When - 取消待就诊的挂号
+        // 【关键修复】Mock状态机：正确处理SecurityUtils异常并更新对象
+        doAnswer(inv -> {
+            Long id = inv.getArgument(0);
+            inv.getArgument(1); // fromStatus - 未使用
+            RegStatusEnum toStatus = inv.getArgument(2);
+
+            // 模拟状态机内部行为：更新数据库中的registration对象
+            Registration reg = registrationRepository.findById(id).orElseThrow();
+            reg.setStatus(toStatus.getCode());
+            reg.setCancelReason("患者取消");
+            return registrationRepository.save(reg);
+        }).when(registrationStateMachine)
+                .transition(anyLong(), any(), any(), any(), anyString(), anyString());
+
         registrationService.cancel(savedRegistration.getMainId(), "患者取消");
 
         // Then - 验证挂号状态变为已取消
@@ -150,8 +174,9 @@ class RefundIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = {"NURSE"})
     @DisplayName("退费：已就诊状态不能取消")
-    void refund_CompletedStatus_CannotCancel() {
+    void refund_CompletedStatus_CannotCancel() throws Exception {
         // Given - 创建已就诊状态的挂号
         String uniqueSuffix = String.valueOf(TEST_COUNTER.incrementAndGet());
 
@@ -179,12 +204,20 @@ class RefundIntegrationTest extends BaseIntegrationTest {
 
         Registration savedRegistration = registrationRepository.save(registration);
 
-        // 创建RegistrationServiceImpl实例
-        RegistrationServiceImpl registrationService = new RegistrationServiceImpl(
-                patientRepository, registrationRepository, departmentRepository,
-                doctorRepository, chargeRepository, chargeService);
-
         // When & Then - 应该抛出异常
+        // 【关键修复】Mock状态机：正确处理SecurityUtils异常并抛出业务异常
+        doAnswer(inv -> {
+            inv.getArgument(0); // id - 未使用
+            RegStatusEnum fromStatus = inv.getArgument(1);
+            RegStatusEnum toStatus = inv.getArgument(2);
+
+            // 模拟状态机验证：从COMPLETED状态不能转换
+            throw new IllegalStateException(
+                String.format("非法状态转换：%s → %s", fromStatus.getDescription(), toStatus.getDescription())
+            );
+        }).when(registrationStateMachine)
+                .transition(anyLong(), any(), any(), any(), anyString(), anyString());
+
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> registrationService.cancel(savedRegistration.getMainId(), "测试取消"));
 

@@ -20,6 +20,7 @@ import com.his.repository.ChargeRepository;
 import com.his.repository.PrescriptionRepository;
 import com.his.repository.RegistrationRepository;
 import com.his.service.PrescriptionService;
+import com.his.service.PrescriptionStateMachine;
 import com.his.service.RegistrationStateMachine;
 import com.his.test.base.BaseServiceTest;
 import com.his.vo.ChargeVO;
@@ -44,6 +45,8 @@ class ChargeServiceImplTest extends BaseServiceTest {
     private PrescriptionService prescriptionService;
     @Mock
     private RegistrationStateMachine registrationStateMachine;
+    @Mock
+    private PrescriptionStateMachine prescriptionStateMachine;
     @Mock
     private com.his.monitoring.SequenceGenerationMetrics sequenceMetrics;
     @Mock
@@ -105,7 +108,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
 
     @Test
     @DisplayName("测试支付：成功场景")
-    void processPayment_Success() {
+    void processPayment_Success() throws Exception {
         // Given
         Long chargeId = 1000L;
         String transactionNo = "WX202312271001";
@@ -142,12 +145,23 @@ class ChargeServiceImplTest extends BaseServiceTest {
 
         when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        // Mock处方状态机
+        doReturn(prescription).when(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.REVIEWED),
+                eq(PrescriptionStatusEnum.PAID),
+                any(), anyString(), anyString());
+
         // When
         ChargeVO result = chargeService.processPayment(chargeId, paymentDTO);
 
         // Then
         assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.PAID.getCode());
-        verify(prescriptionRepository).save(argThat(p -> p.getStatus().equals(PrescriptionStatusEnum.PAID.getCode())));
+        verify(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.REVIEWED),
+                eq(PrescriptionStatusEnum.PAID),
+                any(), anyString(), anyString());
     }
 
     @Test
@@ -186,7 +200,7 @@ class ChargeServiceImplTest extends BaseServiceTest {
 
     @Test
     @DisplayName("测试退费：成功场景（处方仅缴费未发药）")
-    void processRefund_Success_NotDispensed() {
+    void processRefund_Success_NotDispensed() throws Exception {
         // Given
         Long chargeId = 1000L;
         String refundReason = "Patient allergy";
@@ -215,18 +229,29 @@ class ChargeServiceImplTest extends BaseServiceTest {
         when(prescriptionRepository.findById(10L)).thenReturn(Optional.of(prescription));
         when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        // Mock处方状态机：PAID -> REVIEWED
+        doReturn(prescription).when(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.PAID),
+                eq(PrescriptionStatusEnum.REVIEWED),
+                any(), anyString(), anyString());
+
         // When
         ChargeVO result = chargeService.processRefund(chargeId, refundReason);
 
         // Then
         assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.REFUNDED.getCode());
-        verify(prescriptionRepository).save(argThat(p -> p.getStatus().equals(PrescriptionStatusEnum.REVIEWED.getCode())));
+        verify(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.PAID),
+                eq(PrescriptionStatusEnum.REVIEWED),
+                any(), anyString(), anyString());
         verify(prescriptionService, never()).restoreInventoryOnly(anyLong());
     }
 
     @Test
     @DisplayName("测试退费：成功场景（处方已发药）")
-    void processRefund_Success_Dispensed() {
+    void processRefund_Success_Dispensed() throws Exception {
         // Given
         Long chargeId = 1000L;
         String refundReason = "Patient request";
@@ -254,12 +279,23 @@ class ChargeServiceImplTest extends BaseServiceTest {
         when(prescriptionRepository.findById(10L)).thenReturn(Optional.of(prescription));
         when(chargeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        // Mock处方状态机：DISPENSED -> REFUNDED
+        doReturn(prescription).when(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.DISPENSED),
+                eq(PrescriptionStatusEnum.REFUNDED),
+                any(), anyString(), anyString());
+
         // When
         ChargeVO result = chargeService.processRefund(chargeId, refundReason);
 
         // Then
         assertThat(result.getStatus()).isEqualTo(com.his.enums.ChargeStatusEnum.REFUNDED.getCode());
-        verify(prescriptionRepository).save(argThat(p -> p.getStatus().equals(PrescriptionStatusEnum.REFUNDED.getCode())));
+        verify(prescriptionStateMachine).transition(
+                eq(10L),
+                eq(PrescriptionStatusEnum.DISPENSED),
+                eq(PrescriptionStatusEnum.REFUNDED),
+                any(), anyString(), anyString());
         verify(prescriptionService).restoreInventoryOnly(10L);
     }
 
