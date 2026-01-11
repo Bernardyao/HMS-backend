@@ -47,6 +47,7 @@ class MedicalRecordDTOTest {
         dto.setPresentIllness("Started yesterday");
         dto.setDiagnosis("Migraine");
         dto.setDiagnosisCode("G43");
+        dto.setStatus((short) 1);
 
         Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
         assertTrue(violations.isEmpty(), "Valid DTO should have no violations");
@@ -99,5 +100,67 @@ class MedicalRecordDTOTest {
         assertTrue(violatedFields.contains("diagnosisCode"), "Should have violation for diagnosisCode");
         assertTrue(violatedFields.contains("treatmentPlan"), "Should have violation for treatmentPlan");
         assertTrue(violatedFields.contains("doctorAdvice"), "Should have violation for doctorAdvice");
+    }
+
+    @Test
+    @DisplayName("DTO with invalid status should fail validation")
+    void testStatusValidation() {
+        MedicalRecordDTO dto = new MedicalRecordDTO();
+        dto.setRegistrationId(1L);
+
+        // Test status < 0
+        dto.setStatus((short) -1);
+        Set<ConstraintViolation<MedicalRecordDTO>> violationsLow = validator.validate(dto);
+        assertTrue(violationsLow.stream().anyMatch(v -> v.getPropertyPath().toString().equals("status")),
+                   "Should have violation for status < 0");
+
+        // Test status > 2
+        dto.setStatus((short) 3);
+        Set<ConstraintViolation<MedicalRecordDTO>> violationsHigh = validator.validate(dto);
+        assertTrue(violationsHigh.stream().anyMatch(v -> v.getPropertyPath().toString().equals("status")),
+                   "Should have violation for status > 2");
+
+        // Test valid status
+        dto.setStatus((short) 0);
+        assertTrue(validator.validate(dto).isEmpty(), "Status 0 should be valid");
+        dto.setStatus((short) 2);
+        assertTrue(validator.validate(dto).isEmpty(), "Status 2 should be valid");
+    }
+
+    @Test
+    @DisplayName("Empty strings should be valid for optional text fields")
+    void testEmptyStrings() {
+        MedicalRecordDTO dto = new MedicalRecordDTO();
+        dto.setRegistrationId(1L);
+        dto.setChiefComplaint("");
+        dto.setPresentIllness("");
+        dto.setPastHistory("");
+        dto.setPersonalHistory("");
+        dto.setFamilyHistory("");
+        dto.setPhysicalExam("");
+        dto.setAuxiliaryExam("");
+        dto.setDiagnosis("");
+        dto.setTreatmentPlan("");
+        dto.setDoctorAdvice("");
+
+        Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty(), "Empty strings should be allowed for optional fields");
+    }
+
+    @Test
+    @DisplayName("Empty string for diagnosisCode should be invalid")
+    void testDiagnosisCodeValidation() {
+        MedicalRecordDTO dto = new MedicalRecordDTO();
+        dto.setRegistrationId(1L);
+
+        // Empty string (length 0) should fail min=1 constraint
+        dto.setDiagnosisCode("");
+        Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("diagnosisCode")),
+                   "Should have violation for empty diagnosisCode");
+
+        // Valid code
+        dto.setDiagnosisCode("A01");
+        assertTrue(validator.validate(dto).isEmpty(), "Valid diagnosisCode should pass");
     }
 }

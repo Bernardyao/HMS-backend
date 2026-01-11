@@ -1,5 +1,7 @@
 package com.his.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -226,7 +228,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：J06.9（急性上呼吸道感染，未特指）</p>
      */
     @Schema(description = "诊断编码", example = "J06.9")
-    @Size(max = 50, message = "诊断编码长度不能超过50个字符")
+    @Size(min = 1, max = 50, message = "诊断编码长度必须在1到50个字符之间")
     private String diagnosisCode;
 
     /**
@@ -286,5 +288,7 @@ public class MedicalRecordDTO {
     @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）",
             example = "1",
             allowableValues = {"0", "1", "2"})
+    @Min(value = 0, message = "状态值必须大于等于0")
+    @Max(value = 2, message = "状态值必须小于等于2")
     private Short status;
 }
