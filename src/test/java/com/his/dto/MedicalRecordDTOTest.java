@@ -7,6 +7,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("MedicalRecordDTO Validation Test")
 class MedicalRecordDTOTest {
 
+    private ValidatorFactory validatorFactory;
     private Validator validator;
 
     @BeforeEach
     void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+        validatorFactory = Validation.buildDefaultValidatorFactory();
+        validator = validatorFactory.getValidator();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (validatorFactory != null) {
+            validatorFactory.close();
+        }
     }
 
     @Test
@@ -60,11 +69,21 @@ class MedicalRecordDTOTest {
     void testTooLongFields() {
         MedicalRecordDTO dto = new MedicalRecordDTO();
         dto.setRegistrationId(1L);
+
+        // Exceed max lengths
         dto.setChiefComplaint("a".repeat(501)); // Max 500
         dto.setPresentIllness("a".repeat(2001)); // Max 2000
+        dto.setPastHistory("a".repeat(2001)); // Max 2000
+        dto.setPersonalHistory("a".repeat(1001)); // Max 1000
+        dto.setFamilyHistory("a".repeat(1001)); // Max 1000
+        dto.setPhysicalExam("a".repeat(2001)); // Max 2000
+        dto.setAuxiliaryExam("a".repeat(2001)); // Max 2000
         dto.setDiagnosis("a".repeat(501)); // Max 500
+        dto.setDiagnosisCode("a".repeat(51)); // Max 50
+        dto.setTreatmentPlan("a".repeat(2001)); // Max 2000
+        dto.setDoctorAdvice("a".repeat(1001)); // Max 1000
 
         Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
-        assertEquals(3, violations.size(), "Should have 3 violations");
+        assertEquals(11, violations.size(), "Should have 11 violations (one for each field exceeding limits)");
     }
 }
