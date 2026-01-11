@@ -120,11 +120,17 @@ class MedicalRecordDTOTest {
         assertTrue(violationsHigh.stream().anyMatch(v -> v.getPropertyPath().toString().equals("status")),
                    "Should have violation for status > 2");
 
-        // Test valid status
+        // Test valid status values (0, 1, 2)
         dto.setStatus((short) 0);
         assertTrue(validator.validate(dto).isEmpty(), "Status 0 should be valid");
+        dto.setStatus((short) 1);
+        assertTrue(validator.validate(dto).isEmpty(), "Status 1 should be valid");
         dto.setStatus((short) 2);
         assertTrue(validator.validate(dto).isEmpty(), "Status 2 should be valid");
+
+        // Test null status (valid as it's optional)
+        dto.setStatus(null);
+        assertTrue(validator.validate(dto).isEmpty(), "Null status should be valid");
     }
 
     @Test
@@ -143,8 +149,13 @@ class MedicalRecordDTOTest {
         dto.setTreatmentPlan("");
         dto.setDoctorAdvice("");
 
+        // diagnosisCode is explicitly NOT set to empty string here because
+        // it has @Size(min=1), so empty string would be invalid.
+        // See testDiagnosisCodeValidation for that case.
+        dto.setDiagnosisCode(null);
+
         Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
-        assertTrue(violations.isEmpty(), "Empty strings should be allowed for optional fields");
+        assertTrue(violations.isEmpty(), "Empty strings should be allowed for optional fields (except diagnosisCode)");
     }
 
     @Test
