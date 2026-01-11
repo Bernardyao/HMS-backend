@@ -1,5 +1,10 @@
 package com.his.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
@@ -63,6 +68,7 @@ public class MedicalRecordDTO {
      * </ul>
      */
     @Schema(description = "挂号单ID", requiredMode = RequiredMode.REQUIRED, example = "1")
+    @NotNull(message = "挂号单ID不能为空")
     private Long registrationId;
 
     /**
@@ -80,6 +86,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：头痛、发热3天</p>
      */
     @Schema(description = "主诉", example = "头痛、发热3天")
+    @Size(max = 500, message = "主诉长度不能超过500个字符")
     private String chiefComplaint;
 
     /**
@@ -97,6 +104,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：患者3天前无明显诱因出现头痛，呈持续性胀痛...</p>
      */
     @Schema(description = "现病史", example = "患者3天前无明显诱因出现头痛...")
+    @Size(max = 2000, message = "现病史长度不能超过2000个字符")
     private String presentIllness;
 
     /**
@@ -114,6 +122,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：既往体健，无慢性病史，否认手术外伤史</p>
      */
     @Schema(description = "既往史", example = "既往体健，无慢性病史")
+    @Size(max = 2000, message = "既往史长度不能超过2000个字符")
     private String pastHistory;
 
     /**
@@ -130,6 +139,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：无吸烟饮酒史，无疫区居住史</p>
      */
     @Schema(description = "个人史", example = "无吸烟饮酒史")
+    @Size(max = 1000, message = "个人史长度不能超过1000个字符")
     private String personalHistory;
 
     /**
@@ -146,6 +156,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：无遗传病史，父母体健</p>
      */
     @Schema(description = "家族史", example = "无遗传病史")
+    @Size(max = 1000, message = "家族史长度不能超过1000个字符")
     private String familyHistory;
 
     /**
@@ -163,6 +174,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：T: 38.5°C, P: 90次/分, R: 20次/分, BP: 120/80mmHg</p>
      */
     @Schema(description = "体格检查", example = "T: 38.5°C, P: 90次/分...")
+    @Size(max = 2000, message = "体格检查长度不能超过2000个字符")
     private String physicalExam;
 
     /**
@@ -180,6 +192,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：血常规：WBC 12.5×10^9/L, N 85%</p>
      */
     @Schema(description = "辅助检查", example = "血常规：WBC 12.5×10^9/L")
+    @Size(max = 2000, message = "辅助检查长度不能超过2000个字符")
     private String auxiliaryExam;
 
     /**
@@ -197,6 +210,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：上呼吸道感染、急性支气管炎</p>
      */
     @Schema(description = "诊断", example = "上呼吸道感染")
+    @Size(max = 500, message = "诊断长度不能超过500个字符")
     private String diagnosis;
 
     /**
@@ -214,6 +228,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：J06.9（急性上呼吸道感染，未特指）</p>
      */
     @Schema(description = "诊断编码", example = "J06.9")
+    @Size(min = 1, max = 50, message = "诊断编码长度必须在1到50个字符之间")
     private String diagnosisCode;
 
     /**
@@ -231,6 +246,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：1. 抗感染治疗（阿莫西林 0.5g tid） 2. 对症处理（退烧药）</p>
      */
     @Schema(description = "治疗方案", example = "1. 抗感染治疗 2. 对症处理")
+    @Size(max = 2000, message = "治疗方案长度不能超过2000个字符")
     private String treatmentPlan;
 
     /**
@@ -247,6 +263,7 @@ public class MedicalRecordDTO {
      * <p><b>示例</b>：注意休息，多饮水，清淡饮食，3天后复查</p>
      */
     @Schema(description = "医嘱", example = "注意休息，多饮水")
+    @Size(max = 1000, message = "医嘱长度不能超过1000个字符")
     private String doctorAdvice;
 
     /**
@@ -271,5 +288,7 @@ public class MedicalRecordDTO {
     @Schema(description = "状态（0=草稿, 1=已提交, 2=已审核）",
             example = "1",
             allowableValues = {"0", "1", "2"})
+    @Min(value = 0, message = "状态值必须大于等于0")
+    @Max(value = 2, message = "状态值必须小于等于2")
     private Short status;
 }
