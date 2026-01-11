@@ -1,6 +1,7 @@
 package com.his.dto;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,6 +84,20 @@ class MedicalRecordDTOTest {
         dto.setDoctorAdvice("a".repeat(1001)); // Max 1000
 
         Set<ConstraintViolation<MedicalRecordDTO>> violations = validator.validate(dto);
-        assertEquals(11, violations.size(), "Should have 11 violations (one for each field exceeding limits)");
+        Set<String> violatedFields = violations.stream()
+            .map(v -> v.getPropertyPath().toString())
+            .collect(Collectors.toSet());
+
+        assertTrue(violatedFields.contains("chiefComplaint"), "Should have violation for chiefComplaint");
+        assertTrue(violatedFields.contains("presentIllness"), "Should have violation for presentIllness");
+        assertTrue(violatedFields.contains("pastHistory"), "Should have violation for pastHistory");
+        assertTrue(violatedFields.contains("personalHistory"), "Should have violation for personalHistory");
+        assertTrue(violatedFields.contains("familyHistory"), "Should have violation for familyHistory");
+        assertTrue(violatedFields.contains("physicalExam"), "Should have violation for physicalExam");
+        assertTrue(violatedFields.contains("auxiliaryExam"), "Should have violation for auxiliaryExam");
+        assertTrue(violatedFields.contains("diagnosis"), "Should have violation for diagnosis");
+        assertTrue(violatedFields.contains("diagnosisCode"), "Should have violation for diagnosisCode");
+        assertTrue(violatedFields.contains("treatmentPlan"), "Should have violation for treatmentPlan");
+        assertTrue(violatedFields.contains("doctorAdvice"), "Should have violation for doctorAdvice");
     }
 }
